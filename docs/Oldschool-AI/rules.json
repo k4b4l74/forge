@@ -1,0 +1,12 @@
+{
+  "id": "swedish-fe-burn-london-v1",
+  "reviewed": "2026-09-26",
+  "editions": ["Limited Edition Alpha", "Limited Edition Beta", "Unlimited Edition", "Arabian Nights", "Antiquities", "Legends", "The Dark", "Fallen Empires"],
+  "restricted": ["Ancestral Recall", "Balance", "Black Lotus", "Braingeyser", "Channel", "Chaos Orb", "Demonic Tutor", "Regrowth", "Sol Ring", "Strip Mine", "Library of Alexandria", "Mana Drain", "Mind Twist", "Mishra's Workshop", "Mox Emerald", "Mox Jet", "Mox Pearl", "Mox Ruby", "Mox Sapphire", "Time Walk", "Timetwister", "Wheel of Fortune"],
+  "banned": ["Bronze Tablet", "Contract from Below", "Darkpact", "Demonic Attorney", "Jeweled Bird", "Rebirth", "Tempest Efreet"],
+  "basicLands": ["Plains", "Island", "Swamp", "Mountain", "Forest"],
+  "minimumMain": 60,
+  "maximumSideboard": 15,
+  "mulligan": "London",
+  "manaBurn": "one life lost per unspent mana at phase end, not step end"
+}

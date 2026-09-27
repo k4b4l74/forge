@@ -10,6 +10,7 @@ import com.google.common.collect.ObjectArrays;
 
 import forge.game.zone.ZoneType;
 import forge.screens.deckeditor.views.*;
+import forge.screens.home.arena.VSubmenuAiArena;
 import forge.screens.home.gauntlet.*;
 import forge.screens.home.online.VSubmenuOnlineDecks;
 import forge.screens.home.online.VSubmenuOnlineLobby;
@@ -83,6 +84,7 @@ public enum EDocID {
     HOME_PUZZLE_CREATE(VSubmenuPuzzleCreate.SINGLETON_INSTANCE),
     HOME_PUZZLE_SOLVE(VSubmenuPuzzleSolve.SINGLETON_INSTANCE),
     HOME_CONSTRUCTED (VSubmenuConstructed.SINGLETON_INSTANCE),
+    HOME_AI_ARENA (VSubmenuAiArena.SINGLETON_INSTANCE),
     HOME_DRAFT (VSubmenuDraft.SINGLETON_INSTANCE),
     HOME_SEALED (VSubmenuSealed.SINGLETON_INSTANCE),
     HOME_WINSTON (VSubmenuWinston.SINGLETON_INSTANCE),

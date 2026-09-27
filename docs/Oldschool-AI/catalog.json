@@ -1,0 +1,543 @@
+[
+  {
+    "id": "white-zoo",
+    "name": "White Zoo",
+    "family": "Aggro",
+    "aliases": [
+      "GW Zoo",
+      "white-based Zoo"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/white-zoo",
+    "file": "oldschool-white-zoo.md"
+  },
+  {
+    "id": "kobolds",
+    "name": "Kobolds!",
+    "family": "Aggro",
+    "aliases": [
+      "Kobold swarm"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/kobolds",
+    "file": "oldschool-kobolds.md"
+  },
+  {
+    "id": "atog-smash",
+    "name": "Atog Smash",
+    "family": "Aggro",
+    "aliases": [
+      "Atog",
+      "Atog Aggro"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/atog-smash",
+    "file": "oldschool-atog-smash.md"
+  },
+  {
+    "id": "goblins",
+    "name": "Goblins",
+    "family": "Aggro",
+    "aliases": [
+      "Mono Red Goblins"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/goblins",
+    "file": "oldschool-goblins.md"
+  },
+  {
+    "id": "suicide-blue",
+    "name": "Suicide Blue",
+    "family": "Aggro",
+    "aliases": [
+      "Blue aggro",
+      "Mono Blue Aggro"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/suicide-blue",
+    "file": "oldschool-suicide-blue.md"
+  },
+  {
+    "id": "sligh",
+    "name": "Sligh",
+    "family": "Aggro",
+    "aliases": [
+      "Mono Red Aggro",
+      "Red Deck Wins"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/sligh",
+    "file": "oldschool-sligh.md"
+  },
+  {
+    "id": "erhnam-burnem",
+    "name": "Erhnam Burn'Em",
+    "family": "Aggro",
+    "aliases": [
+      "GR Aggro",
+      "RG Aggro"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/erhnam-burnem",
+    "file": "oldschool-erhnam-burnem.md"
+  },
+  {
+    "id": "green-blue-berserk",
+    "name": "Green Blue Berserk",
+    "family": "Aggro",
+    "aliases": [
+      "UG Berserk",
+      "Berserk aggro"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/green-blue-berserk",
+    "file": "oldschool-green-blue-berserk.md"
+  },
+  {
+    "id": "br-aggro",
+    "name": "Black Red Aggro",
+    "family": "Aggro",
+    "aliases": [
+      "BR Aggro",
+      "Rakdos aggro"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/br-aggro",
+    "file": "oldschool-br-aggro.md"
+  },
+  {
+    "id": "white-weenie",
+    "name": "White Weenie",
+    "family": "Aggro",
+    "aliases": [
+      "WW",
+      "Mono White Aggro"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/white-weenie",
+    "file": "oldschool-white-weenie.md"
+  },
+  {
+    "id": "lestree-zoo",
+    "name": "Lestree Zoo",
+    "family": "Aggro",
+    "aliases": [
+      "UGR Zoo",
+      "Arabian Aggro",
+      "Quicksilver (overlap)"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/lestree-zoo",
+    "file": "oldschool-lestree-zoo.md"
+  },
+  {
+    "id": "artifact-aggro",
+    "name": "Artifact Aggro",
+    "family": "Aggro",
+    "aliases": [
+      "Robots",
+      "Workshop Aggro"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/artifact-aggro",
+    "file": "oldschool-artifact-aggro.md"
+  },
+  {
+    "id": "ur-burn",
+    "name": "UR Burn",
+    "family": "Aggro",
+    "aliases": [
+      "Counterburn",
+      "UR Control",
+      "Blue Red Burn"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/ur-burn",
+    "file": "oldschool-ur-burn.md"
+  },
+  {
+    "id": "machine-head",
+    "name": "Machine Head",
+    "family": "Midrange",
+    "aliases": [
+      "BG fatties",
+      "Black Green Midrange"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/machine-head",
+    "file": "oldschool-machine-head.md"
+  },
+  {
+    "id": "the-abyss",
+    "name": "The Abyss",
+    "family": "Midrange",
+    "aliases": [
+      "Abyss Robots",
+      "Artifact Abyss"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/the-abyss",
+    "file": "oldschool-the-abyss.md"
+  },
+  {
+    "id": "green-ramp",
+    "name": "Green Ramp",
+    "family": "Midrange",
+    "aliases": [
+      "Mono Green Ramp",
+      "Big Green"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/green-ramp",
+    "file": "oldschool-green-ramp.md"
+  },
+  {
+    "id": "troll-disco",
+    "name": "Troll Disco",
+    "family": "Midrange",
+    "aliases": [
+      "Troll Disk",
+      "Disco Troll",
+      "Troll Disco"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/troll-disco",
+    "file": "oldschool-troll-disco.md"
+  },
+  {
+    "id": "uw-skies",
+    "name": "UW Skies",
+    "family": "Midrange",
+    "aliases": [
+      "UW flyers",
+      "Blue White Skies"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/uw-skies",
+    "file": "oldschool-uw-skies.md"
+  },
+  {
+    "id": "deadguy-ale",
+    "name": "Deadguy Ale",
+    "family": "Midrange",
+    "aliases": [
+      "BW Midrange",
+      "Black White disruption"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/deadguy-ale",
+    "file": "oldschool-deadguy-ale.md"
+  },
+  {
+    "id": "mono-black",
+    "name": "Mono Black",
+    "family": "Midrange",
+    "aliases": [
+      "Monoblack",
+      "Black aggro"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/mono-black",
+    "file": "oldschool-mono-black.md"
+  },
+  {
+    "id": "erhnamgeddon",
+    "name": "Erhnamgeddon",
+    "family": "Midrange",
+    "aliases": [
+      "Erhnam Armageddon",
+      "GW Geddon"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/erhnamgeddon",
+    "file": "oldschool-erhnamgeddon.md"
+  },
+  {
+    "id": "karma-tomb",
+    "name": "Karma Tomb",
+    "family": "Control",
+    "aliases": [
+      "Cyclopean Tomb control"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/karma-tomb",
+    "file": "oldschool-karma-tomb.md"
+  },
+  {
+    "id": "lands",
+    "name": "Lands",
+    "family": "Control",
+    "aliases": [
+      "Fastbond Lands",
+      "Old School Lands"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/lands",
+    "file": "oldschool-lands.md"
+  },
+  {
+    "id": "arboria-control",
+    "name": "Arboria Control",
+    "family": "Control",
+    "aliases": [
+      "Arboria mill"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/arboria-control",
+    "file": "oldschool-arboria-control.md"
+  },
+  {
+    "id": "leprechaun-ward",
+    "name": "Leprechaun Ward",
+    "family": "Control",
+    "aliases": [
+      "Aisling control",
+      "Green Ward"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/leprechaun-ward",
+    "file": "oldschool-leprechaun-ward.md"
+  },
+  {
+    "id": "ponza",
+    "name": "Ponza",
+    "family": "Control",
+    "aliases": [
+      "RGB land destruction",
+      "Land destruction"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/ponza",
+    "file": "oldschool-ponza.md"
+  },
+  {
+    "id": "artifact-toolbox",
+    "name": "Artifact Toolbox",
+    "family": "Control",
+    "aliases": [
+      "Transmute toolbox"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/artifact-toolbox",
+    "file": "oldschool-artifact-toolbox.md"
+  },
+  {
+    "id": "distress",
+    "name": "Distress",
+    "family": "Control",
+    "aliases": [
+      "Black attrition control"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/distress",
+    "file": "oldschool-distress.md"
+  },
+  {
+    "id": "the-deck",
+    "name": "The Deck",
+    "family": "Control",
+    "aliases": [
+      "Five-color control",
+      "UWx Control",
+      "The deck"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/the-deck",
+    "file": "oldschool-the-deck.md"
+  },
+  {
+    "id": "the-beast",
+    "name": "The Beast",
+    "family": "Control",
+    "aliases": [
+      "Guardian Beast control"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/the-beast-1",
+    "file": "oldschool-the-beast.md"
+  },
+  {
+    "id": "lich-mirror",
+    "name": "Lich Mirror",
+    "family": "Combo",
+    "aliases": [
+      "Lich"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/2018-5-11/lich-mirror",
+    "file": "oldschool-lich-mirror.md"
+  },
+  {
+    "id": "cloaked-ali",
+    "name": "Cloaked Ali",
+    "family": "Combo",
+    "aliases": [
+      "Ali from Cairo control"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/cloaked-ali",
+    "file": "oldschool-cloaked-ali.md"
+  },
+  {
+    "id": "fork-combo",
+    "name": "Fork Combo",
+    "family": "Combo",
+    "aliases": [
+      "Fork recursion"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/fork-combo",
+    "file": "oldschool-fork-combo.md"
+  },
+  {
+    "id": "reanimator",
+    "name": "Reanimator",
+    "family": "Combo",
+    "aliases": [
+      "Reanimation",
+      "Bazaar Reanimator"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/reanimator",
+    "file": "oldschool-reanimator.md"
+  },
+  {
+    "id": "tax-edge",
+    "name": "TaxEdge",
+    "family": "Combo",
+    "aliases": [
+      "Tax Edge",
+      "Land Tax / Land's Edge"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/tax-edge",
+    "file": "oldschool-tax-edge.md"
+  },
+  {
+    "id": "mirrorball",
+    "name": "MirrorBall",
+    "family": "Combo",
+    "aliases": [
+      "Sylvan Mirror",
+      "Mirror Ball"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/sylvan-mirror",
+    "file": "oldschool-mirrorball.md"
+  },
+  {
+    "id": "eureka",
+    "name": "Eureka!",
+    "family": "Combo",
+    "aliases": [
+      "Eureka fatties"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/eureka",
+    "file": "oldschool-eureka.md"
+  },
+  {
+    "id": "enchantress",
+    "name": "Enchantress",
+    "family": "Combo",
+    "aliases": [
+      "Verduran Enchantress"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/enchantress",
+    "file": "oldschool-enchantress.md"
+  },
+  {
+    "id": "the-machinecoffin-combo",
+    "name": "The Machine/Coffin Combo",
+    "family": "Combo",
+    "aliases": [
+      "Coffin Combo",
+      "The Machine",
+      "Tawnos's Coffin"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/the-machinecoffin-combo",
+    "file": "oldschool-the-machinecoffin-combo.md"
+  },
+  {
+    "id": "candleflare",
+    "name": "Candleflare",
+    "family": "Combo",
+    "aliases": [
+      "CandleFlare",
+      "Big Red mana"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/candleflare",
+    "file": "oldschool-candleflare.md"
+  },
+  {
+    "id": "twiddlevault",
+    "name": "Twiddlevault",
+    "family": "Combo",
+    "aliases": [
+      "Twiddle Vault",
+      "Time Vault combo"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/twiddlevault",
+    "file": "oldschool-twiddlevault.md"
+  },
+  {
+    "id": "power-monolith",
+    "name": "Power Monolith",
+    "family": "Combo",
+    "aliases": [
+      "Power Artifact combo",
+      "Basalt combo"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/power-monolith",
+    "file": "oldschool-power-monolith.md"
+  },
+  {
+    "id": "trick-deck",
+    "name": "Trick Deck",
+    "family": "Combo",
+    "aliases": [
+      "Underworld Dreams wheel",
+      "Dreams combo"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/trick-deck",
+    "file": "oldschool-trick-deck.md"
+  },
+  {
+    "id": "turbo-fog",
+    "name": "Turbo Fog",
+    "family": "Prison",
+    "aliases": [
+      "Fog prison"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/2018-5-11/turbo-fog",
+    "file": "oldschool-turbo-fog.md"
+  },
+  {
+    "id": "land-equilibrium",
+    "name": "Land Equilibrium",
+    "family": "Prison",
+    "aliases": [
+      "Equilibrium Vortex"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/2018-2-11/land-equilibrium",
+    "file": "oldschool-land-equilibrium.md"
+  },
+  {
+    "id": "living-plane-combo",
+    "name": "Living Plane Combo",
+    "family": "Prison",
+    "aliases": [
+      "Living Plane",
+      "Tim lands"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/living-plane-combo",
+    "file": "oldschool-living-plane-combo.md"
+  },
+  {
+    "id": "parfait",
+    "name": "Parfait",
+    "family": "Prison",
+    "aliases": [
+      "Winter Orb Parfait",
+      "Artifact prison"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/parfait",
+    "file": "oldschool-parfait.md"
+  },
+  {
+    "id": "the-void",
+    "name": "The Void",
+    "family": "Prison",
+    "aliases": [
+      "Nether Void",
+      "Black prison"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/the-void",
+    "file": "oldschool-the-void.md"
+  },
+  {
+    "id": "stasis",
+    "name": "Stasis",
+    "family": "Prison",
+    "aliases": [
+      "Turbo Stasis",
+      "Stasis Kismet"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/stasis",
+    "file": "oldschool-stasis.md"
+  },
+  {
+    "id": "field-of-dreams",
+    "name": "Field of Dreams",
+    "family": "Prison",
+    "aliases": [
+      "Conceding Dreams",
+      "Field/Sindbad"
+    ],
+    "source": "https://www.wak-wak.se/9394decks/conceding-dreams",
+    "file": "oldschool-field-of-dreams.md"
+  }
+]

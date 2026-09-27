@@ -1,0 +1,18 @@
+services:
+  forge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: forge-desktop:java21
+    init: true
+    ports:
+      - "127.0.0.1:${FORGE_PORT:-6080}:6080"
+    environment:
+      SCREEN_RESOLUTION: ${SCREEN_RESOLUTION:-1600x900}
+      JAVA_TOOL_OPTIONS: "-Xms${JAVA_MIN_HEAP:-512m} -Xmx${JAVA_MAX_HEAP:-4g}"
+      TZ: ${TZ:-Europe/Paris}
+    volumes:
+      - ${FORGE_DATA_DIR:-./data}/profile:/home/forge/.forge
+      - ${FORGE_DATA_DIR:-./data}/cache:/home/forge/.cache/forge
+    shm_size: 256mb
+    stop_grace_period: 30s

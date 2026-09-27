@@ -78,6 +78,13 @@ public class Match {
     }
 
     public void startGame(final Game game, Runnable startGameHook) {
+        startGame(game, startGameHook, null);
+    }
+
+    public void startGame(final Game game, final Runnable startGameHook, final RegisteredPlayer firstPlayerToChoose) {
+        if (firstPlayerToChoose != null && !players.contains(firstPlayerToChoose)) {
+            throw new IllegalArgumentException("Starting player must belong to this match");
+        }
         prepareAllZones(game);
         if (rules.useAnte()) {  // Deciding which cards go to ante
             Multimap<Player, Card> list = game.chooseCardsForAnte(rules.getMatchAnteRarity(), rules.getAnteIncludeBasicLands());
@@ -89,7 +96,7 @@ public class Match {
             game.fireEvent(GameEventAnteCardsSelected.fromCards(list));
         }
 
-        game.getAction().startGame(this.lastOutcome, startGameHook);
+        game.getAction().startGame(this.lastOutcome, startGameHook, firstPlayerToChoose);
 
         // Typically ante, but also tearing up a blacker lotus
         executeOwnershipChanges(game);

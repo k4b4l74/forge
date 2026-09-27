@@ -2320,7 +2320,12 @@ public class GameAction {
         startGame(lastGameOutcome, null);
     }
     public void startGame(GameOutcome lastGameOutcome, Runnable startGameHook) {
-        Player first = determineFirstTurnPlayer(lastGameOutcome);
+        startGame(lastGameOutcome, startGameHook, null);
+    }
+
+    public void startGame(final GameOutcome lastGameOutcome, final Runnable startGameHook,
+                          final RegisteredPlayer firstPlayerToChoose) {
+        Player first = determineFirstTurnPlayer(lastGameOutcome, firstPlayerToChoose);
 
         GameType gameType = game.getRules().getGameType();
         do {
@@ -2381,7 +2386,7 @@ public class GameAction {
         } while (game.getAge() == GameStage.RestartedByKarn);
     }
 
-    private Player determineFirstTurnPlayer(final GameOutcome lastGameOutcome) {
+    private Player determineFirstTurnPlayer(final GameOutcome lastGameOutcome, final RegisteredPlayer firstPlayerToChoose) {
         // Only cut/coin toss if it's the first game of the match
         Player goesFirst = null;
 
@@ -2414,7 +2419,14 @@ public class GameAction {
         }
 
         boolean isFirstGame = lastGameOutcome == null;
-        if (isFirstGame) {
+        if (firstPlayerToChoose != null) {
+            for (final Player player : game.getPlayers()) {
+                if (player.getRegisteredPlayer() == firstPlayerToChoose) {
+                    goesFirst = player;
+                    break;
+                }
+            }
+        } else if (isFirstGame) {
             game.fireEvent(new GameEventFlipCoin()); // Play the Flip Coin sound
             goesFirst = Aggregates.random(game.getPlayers());
         } else {

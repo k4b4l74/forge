@@ -67,6 +67,19 @@ public class ForgeProfileProperties {
             System.err.println("error while reading from profile properties file");
         }
 
+        final String userOverride = System.getProperty("forge.userDir");
+        final String cacheOverride = System.getProperty("forge.cacheDir");
+        if (StringUtils.isNotBlank(userOverride)) {
+            props.setProperty(USER_DIR_KEY, userOverride);
+            props.remove(DECKS_DIR_KEY);
+            props.remove(DECKS_CONSTRUCTED_DIR_KEY);
+        }
+        if (StringUtils.isNotBlank(cacheOverride)) {
+            props.setProperty(CACHE_DIR_KEY, cacheOverride);
+            props.remove(CARD_PICS_DIR_KEY);
+            props.remove(CARD_PICS_SUB_DIRS_KEY);
+        }
+
         final Pair<String, String> defaults = getDefaultDirs();
         userDir     = getDir(props, USER_DIR_KEY,      defaults.getLeft());
         cacheDir    = getDir(props, CACHE_DIR_KEY,     defaults.getRight());

@@ -3,6 +3,7 @@ package forge.ai.ability;
 import forge.ai.AiAbilityDecision;
 import forge.ai.AiPlayDecision;
 import forge.ai.ComputerUtilCard;
+import forge.ai.OldschoolReanimatorAi;
 import forge.ai.SpellAbilityAi;
 import forge.game.Game;
 import forge.game.ability.AbilityUtils;
@@ -214,6 +215,10 @@ public class CloneAi extends SpellAbilityAi {
             options = CardLists.filter(options, CardPredicates.sharesNameWith(host).negate());
         }
 
+        if (!isOpp && "Copy Artifact".equals(name) && OldschoolReanimatorAi.enabled(ai)) {
+            final Card robot = OldschoolReanimatorAi.copyTarget(options);
+            if (robot != null) { return robot; }
+        }
         Card choice = isOpp ? ComputerUtilCard.getWorstAI(options) : ComputerUtilCard.getBestAI(options);
 
         return choice;

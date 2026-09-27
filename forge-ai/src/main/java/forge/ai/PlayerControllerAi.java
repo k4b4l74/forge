@@ -96,6 +96,10 @@ public class PlayerControllerAi extends PlayerController {
         if (!brains.getGame().getRules().getAISideboardingEnabled() || !deck.has(DeckSection.Sideboard)) {
             return null;
         }
+        if (OldschoolReanimatorAi.enabled(player) && gameType == GameType.Constructed
+                && player.getLobbyPlayer() instanceof LobbyPlayerAi lobby) {
+            return lobby.getOldschoolKnowledge().sideboard(deck, brains.getGame().getMatch());
+        }
 
         Map<PaperCard, PaperCard> sideboardPlan = Maps.newHashMap();
         List<PaperCard> main = deck.get(DeckSection.Main).toFlatList();
@@ -140,7 +144,8 @@ public class PlayerControllerAi extends PlayerController {
         }
 
         GameOutcome lastOutcome = brains.getGame().getMatch().getLastOutcome();
-        if (lastOutcome.getWinningPlayer().getPlayer().equals(player.getLobbyPlayer())
+        if (lastOutcome != null && lastOutcome.getWinningPlayer() != null
+            && lastOutcome.getWinningPlayer().getPlayer().equals(player.getLobbyPlayer())
             && MyRandom.getRandom().nextInt(100) > sbChanceOnWin) {
             return null;
         }
@@ -771,11 +776,18 @@ public class PlayerControllerAi extends PlayerController {
 
     @Override
     public boolean mulliganKeepHand(Player firstPlayer, int cardsToReturn)  {
+        if (OldschoolReanimatorAi.enabled(player)) {
+            return OldschoolReanimatorAi.keepHand(player.getCardsIn(ZoneType.Hand), cardsToReturn);
+        }
         return !ComputerUtil.wantMulligan(player, cardsToReturn);
     }
 
     @Override
     public CardCollectionView tuckCardsViaMulligan(CardCollectionView hand, int cardsToReturn) {
+        if (OldschoolReanimatorAi.enabled(player)) {
+            final CardCollection bottom = OldschoolReanimatorAi.bottomCards(hand, cardsToReturn);
+            if (bottom != null) { return bottom; }
+        }
         // TODO This is better than it was before, but still suboptimal (but fast).
         // Maybe score a bunch of hands based on projected hand size and return the "duds"
         int numLandsDesired = (player.getStartingHandSize() - cardsToReturn) / 2;

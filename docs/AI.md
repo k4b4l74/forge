@@ -11,12 +11,23 @@ Defining general concepts of smart play can help improve the win rate much easie
 
 If you want to train a model for the AI, please do. We would love to see something like that implemented in Forge.
 
+# Old School strategy playbooks
+
+The [Old School AI library](Oldschool-AI/Oldschool-AI.md) documents all 50 Wak-Wak
+archetypes, including mulligans, matchup plans and reference-list sideboarding.
+These are strategy specifications, not an installed AI profile or a claim of
+stronger play. Read its rules contract and engine compatibility audit before
+using simulation results to evaluate the proposed strategies.
+
 # AI Matches from Command Line
 The AI can battle itself in the command line, allowing the tests to be performed on headless servers or on computers that have poor graphic performance, and when you just don't need to see the match. This can be useful if you want to script testing of decks, test a large tournament, or just bash 100's of games out to see how well a deck performs.
 
 Please understand, the AI is still the AI, and it's limitations exist even against itself. Games can lag and become almost unbearably long when the AI has a lot to think about, and you can't see what's on the table for it to play against. It's best if you set up the tournament and walk away, you can analyze logs later, results are printed at the end.
 
 ## Syntax
+For graphical tournament setup, background games, resumable runs, and reports,
+see [AI Arena](AI-Arena.md). The command-line simulator below remains independent.
+
 `sim -d <deck1[.dck]> ... <deckX[.dck]> -D [path] -n [N] -f [F] -t [T] -p [P] -q`
 
 - `sim` - "Simulation Mode" forces Forge to not start the GUI and automatically runs the AI matches in command line. Enables all other switches for simulation mode.

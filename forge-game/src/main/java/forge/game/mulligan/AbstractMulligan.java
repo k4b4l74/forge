@@ -36,10 +36,12 @@ public abstract class AbstractMulligan {
         for (final Card c : toMulligan) {
             player.getGame().getAction().moveToLibrary(c, null);
         }
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        if (!player.getGame().isNoGUIUser()) {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
         player.shuffle(null);
         timesMulliganed++;

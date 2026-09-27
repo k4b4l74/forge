@@ -41,6 +41,7 @@ import forge.gui.framework.IVTopLevelUI;
 import forge.localinstance.properties.ForgePreferences.FPref;
 import forge.localinstance.skin.FSkinProp;
 import forge.model.FModel;
+import forge.screens.home.arena.VSubmenuAiArena;
 import forge.screens.home.gauntlet.*;
 import forge.screens.home.online.VSubmenuOnlineDecks;
 import forge.screens.home.online.VSubmenuOnlineLobby;
@@ -118,6 +119,7 @@ public enum VHomeUI implements IVTopLevelUI {
         allSubmenus.add(VSubmenuConstructed.SINGLETON_INSTANCE);
         allSubmenus.add(VSubmenuDraft.SINGLETON_INSTANCE);
         allSubmenus.add(VSubmenuSealed.SINGLETON_INSTANCE);
+        allSubmenus.add(VSubmenuAiArena.SINGLETON_INSTANCE);
         //allSubmenus.add(VSubmenuWinston.SINGLETON_INSTANCE);
 
         allSubmenus.add(VSubmenuOnlineLobby.SINGLETON_INSTANCE);

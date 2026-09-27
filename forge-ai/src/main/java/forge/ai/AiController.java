@@ -1066,6 +1066,10 @@ public class AiController {
         if (validCards.size() <= min) {
             return validCards; //return all valid cards since they will be discarded without filtering needed
         }
+        if (OldschoolReanimatorAi.enabled(player) && sa != null
+                && ("Bazaar of Baghdad".equals(sa.getHostCard().getName()) || "Recall".equals(sa.getHostCard().getName()))) {
+            return OldschoolReanimatorAi.discard(player, validCards, min);
+        }
 
         Card sourceCard = null;
         final CardCollection discardList = new CardCollection();

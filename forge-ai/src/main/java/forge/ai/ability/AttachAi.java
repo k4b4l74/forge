@@ -586,7 +586,8 @@ public class AttachAi extends SpellAbilityAi {
             return result;
         });
 
-        final Card c = ComputerUtilCard.getBestCreatureAI(betterList);
+        final Card c = OldschoolReanimatorAi.enabled(ai) && "Animate Dead".equals(attachSource.getName())
+                ? OldschoolReanimatorAi.reanimationTarget(ai, betterList) : ComputerUtilCard.getBestCreatureAI(betterList);
 
         // If Mandatory (brought directly into play without casting) gotta
         // choose something

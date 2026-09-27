@@ -14,6 +14,9 @@ public class LobbyPlayerAi extends LobbyPlayer implements IGameEntitiesFactory {
     private String aiProfile = "";
     private boolean rotateProfileEachGame;
     private AIOption option;
+    private final OldschoolReanimatorAi.MatchKnowledge oldschoolKnowledge = new OldschoolReanimatorAi.MatchKnowledge();
+
+    public OldschoolReanimatorAi.MatchKnowledge getOldschoolKnowledge() { return oldschoolKnowledge; }
 
     public LobbyPlayerAi(String name, Set<AIOption> options) {
         super(name);
@@ -52,6 +55,10 @@ public class LobbyPlayerAi extends LobbyPlayer implements IGameEntitiesFactory {
 
         if (rotateProfileEachGame) {
             setAiProfile(AiProfileUtil.getRandomProfile());
+        }
+        if (OldschoolReanimatorAi.enabled(ai)) {
+            oldschoolKnowledge.begin(game.getMatch());
+            game.subscribeToEvents(new OldschoolReanimatorAi.Observer(ai, oldschoolKnowledge));
         }
         return ai;
     }
