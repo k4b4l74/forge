@@ -3,17 +3,21 @@ package forge.gamemodes.aisimulation;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.testng.SkipException;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
@@ -42,6 +46,29 @@ public class ArenaSimulationTest {
             decks.add(new ArenaConfiguration.Entrant("Deck " + entrant, "folder/" + entrant, "Default"));
         }
         return new ArenaConfiguration(1, "test-run", "Test", 0, 1234, "build", "inputs", games, workers, 512, 2, decks);
+    }
+
+    @Test(timeOut = 10000)
+    public void retriesTransientWindowsAccessDenialsWithoutLosingThePreviousJson() throws Exception {
+        if (!System.getProperty("os.name").startsWith("Windows")) { throw new SkipException("Windows file replacement semantics"); }
+        final Path destination = directory.resolve("status.json");
+        Files.writeString(destination, "old");
+        Files.setAttribute(destination, "dos:readonly", true);
+        final var executor = Executors.newSingleThreadScheduledExecutor();
+        try {
+            final Path probe = directory.resolve("probe.tmp");
+            Files.writeString(probe, "probe");
+            expectThrows(AccessDeniedException.class, () -> Files.move(probe, destination,
+                    StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING));
+            assertEquals(Files.readString(destination), "old");
+            final var unlock = executor.schedule(() -> Files.setAttribute(destination, "dos:readonly", false), 150, TimeUnit.MILLISECONDS);
+            ArenaStore.writeJson(destination, Map.of("state", "new"));
+            unlock.get(5, TimeUnit.SECONDS);
+            assertEquals(Files.readString(destination), "{\"state\":\"new\"}");
+        } finally {
+            executor.shutdownNow();
+            Files.setAttribute(destination, "dos:readonly", false);
+        }
     }
 
     private ArenaConfiguration comparison(final int matches, final int gamesPerMatch) {

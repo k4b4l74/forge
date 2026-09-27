@@ -10,6 +10,7 @@ services:
     environment:
       SCREEN_RESOLUTION: ${SCREEN_RESOLUTION:-1600x900}
       VNC_USE_XDAMAGE: ${VNC_USE_XDAMAGE:-true}
+      FORGE_MAGEZERO_URL: http://magezero:8765/choose
       JAVA_TOOL_OPTIONS: "-Xms${JAVA_MIN_HEAP:-512m} -Xmx${JAVA_MAX_HEAP:-4g}"
       TZ: ${TZ:-Europe/Paris}
     volumes:
@@ -17,6 +18,21 @@ services:
       - ${FORGE_CACHE_SOURCE:-${FORGE_DATA_DIR:-./data}/cache}:/home/forge/.cache/forge
     shm_size: 256mb
     stop_grace_period: 30s
+
+  magezero:
+    profiles: [learning]
+    build:
+      context: forge-gui/tools/magezero
+    image: forge-magezero:bootstrap
+    init: true
+    ports:
+      - "127.0.0.1:8765:8765"
+    volumes:
+      - ${FORGE_DATA_DIR:-./data}/magezero/upstream:/upstream:ro
+      - ${FORGE_DATA_DIR:-./data}/profile/ai-models/kabal-bootstrap-001:/model:ro
+    command: [serve, --source, /upstream, --model, /model, --host, 0.0.0.0]
+    mem_limit: 4g
+    cpus: 2
 
 volumes:
   forge-cache-linux:

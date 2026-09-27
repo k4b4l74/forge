@@ -9,6 +9,7 @@ import forge.gamemodes.aisimulation.ArenaRunner;
 import forge.gamemodes.aisimulation.ArenaSchedule;
 import forge.gamemodes.aisimulation.ArenaStore;
 import forge.view.ArenaDecisionTrace;
+import forge.view.ArenaLearningSession;
 import forge.view.ArenaReplayMain;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -148,6 +149,31 @@ public class ArenaProcessWorkerTest {
             result.validate(store.configuration());
             assertEquals(result.games().get(0).leftSideboardCards(), 0);
             assertTrue(result.games().stream().skip(1).anyMatch(game -> game.leftSideboardCards() > 0), result.toString());
+            ArenaStore.writeJson(directory.resolve("inputs/learning.json"), new ArenaLearningSession.Settings(1,
+                    "collect", List.of("OS Reanimator"), "", "", 1000));
+            try (ArenaProcessWorker collector = new ArenaProcessWorker(store, 1, assets)) {
+                final ArenaResult collected = collector.play(ArenaSchedule.task(store.configuration(), 0));
+                assertTrue(collected.isValidGame(), collected.toString());
+                assertEquals(collected.winner(), result.winner());
+                assertEquals(collected.turns(), result.turns());
+                assertEquals(collected.games().size(), result.games().size());
+                for (int index = 0; index < result.games().size(); index++) {
+                    assertEquals(collected.games().get(index).winner(), result.games().get(index).winner());
+                }
+            }
+            try (Stream<Path> paths = Files.list(directory.resolve("learning"))) {
+                final List<String> logs = new ArrayList<>();
+                for (final Path path : paths.toList()) { logs.add(Files.readString(path)); }
+                assertEquals(logs.size(), result.games().size());
+                assertTrue(logs.stream().anyMatch(log -> log.contains("\"reason\":\"teacher\"")));
+                assertTrue(logs.stream().allMatch(log -> log.contains("\"kind\":\"outcome\"")));
+                for (final String log : logs) {
+                    final String outcome = log.lines().reduce((previous, last) -> last).orElseThrow();
+                    final var rewards = ArenaStore.JSON.fromJson(outcome, com.google.gson.JsonObject.class).getAsJsonObject("rewards");
+                    assertEquals(rewards.size(), 2);
+                    assertEquals(rewards.get("Arena-0").getAsInt() + rewards.get("Arena-1").getAsInt(), 0);
+                }
+            }
         }
     }
 

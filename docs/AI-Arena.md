@@ -220,6 +220,11 @@ matches. Use a new comparison run for fresh-seed candidate evaluation.
 
 ## Developer verification
 
+For the experimental `OS Reanimator Learned` profile, checkpoint installation,
+teacher-data collection and the limitations of the first MageZero bootstrap, see
+[MageZero / Forge hybrid](MageZero-Forge.md). It is Arena-only and does not replace
+the existing heuristic profiles.
+
 From the repository root, with Java 17+ and Maven installed:
 
 ```sh

@@ -67,6 +67,7 @@ public final class ArenaWorkerMain {
             final ArenaConfiguration configuration = ArenaStore.JSON.fromJson(
                     Files.readString(runDirectory.resolve("run.json")), ArenaConfiguration.class);
             final Set<Integer> tracedMatches = ArenaDecisionTrace.selectedMatches(runDirectory, configuration);
+            final ArenaLearningSession.Settings learning = ArenaLearningSession.readSettings(runDirectory, configuration);
             GuiBase.setInterface(new GuiDesktop() {
                 @Override
                 public String getAssetsDir() { return assets; }
@@ -100,7 +101,7 @@ public final class ArenaWorkerMain {
                 final ArenaResult result;
                 try (ArenaDecisionTrace trace = tracedMatches.contains(request.task().gameId())
                         ? new ArenaDecisionTrace(runDirectory, configuration, request.task()) : null) {
-                    result = play(configuration, decks, request.task(), trace);
+                    result = play(configuration, decks, request.task(), trace, runDirectory, learning);
                     if (trace != null) { trace.write(Map.of("kind", "result", "result", result)); }
                 }
                 protocol.println(ArenaStore.JSON.toJson(ArenaProtocol.result(result)));
@@ -116,7 +117,8 @@ public final class ArenaWorkerMain {
     }
 
     private static ArenaResult play(final ArenaConfiguration configuration, final List<Deck> decks,
-                                     final ArenaSchedule.Task task, final ArenaDecisionTrace trace) {
+                                     final ArenaSchedule.Task task, final ArenaDecisionTrace trace, final Path directory,
+                                     final ArenaLearningSession.Settings learning) {
         final long started = System.nanoTime();
         try {
             MyRandom.setRandom(new Random(task.seed()));
@@ -138,8 +140,12 @@ public final class ArenaWorkerMain {
                 final Game game = match.createGame();
                 game.setNoGUIUser();
                 if (trace != null) { trace.beginGame(games.size() + 1); }
-                match.startGame(game, null, games.isEmpty()
-                        ? players.get(task.firstToChoose() == task.left() ? 0 : 1) : null);
+                try (ArenaLearningSession session = learning == null ? null
+                        : new ArenaLearningSession(directory, learning, game, task.gameId(), games.size() + 1, task.seed())) {
+                    match.startGame(game, null, games.isEmpty()
+                            ? players.get(task.firstToChoose() == task.left() ? 0 : 1) : null);
+                    if (session != null && game.getOutcome() != null) { session.finish(game); }
+                }
                 if (trace != null) { trace.endGame(game); }
                 final GameOutcome outcome = game.getOutcome();
                 if (outcome == null) { throw new IllegalStateException("Game returned without an outcome"); }

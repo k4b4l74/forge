@@ -13,6 +13,7 @@ import forge.localinstance.properties.ForgeConstants;
 import forge.model.FModel;
 import forge.util.FileSection;
 import forge.view.ArenaWorkerMain;
+import forge.view.ArenaLearningSession;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -97,6 +98,14 @@ public final class ArenaFiles {
             Files.copy(preferences, inputs.resolve("preferences/forge.preferences"));
         }
         copyTree(Path.of(ForgeConstants.USER_CUSTOM_DIR), inputs.resolve("custom"));
+        if (entrants.stream().anyMatch(entrant -> ArenaLearningSession.PROFILE.equals(entrant.profile()))) {
+            try {
+                final String endpoint = System.getenv().getOrDefault("FORGE_MAGEZERO_URL", "http://127.0.0.1:8765/choose");
+                ArenaLearningSession.snapshotModel(inputs, Path.of(ForgeConstants.USER_DIR, "ai-models", "kabal-bootstrap-001"), endpoint);
+            } catch (Exception exception) {
+                throw new IOException("Install the KabaL checkpoint before using the learned profile; see docs/MageZero-Forge.md", exception);
+            }
+        }
         final ArenaConfiguration configuration = new ArenaConfiguration(ArenaConfiguration.VERSION, id, name,
                 System.currentTimeMillis(), ThreadLocalRandom.current().nextLong(), fingerprint,
                 ArenaFingerprint.calculate(List.of(inputs)), games, workers, heap, timeout, entrants, gamesPerMatch, comparisonProfiles);

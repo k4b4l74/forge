@@ -162,7 +162,7 @@ public final class OldschoolReanimatorAi {
             remaining.remove(choice);
             loaded |= payoff(choice);
         }
-        return result;
+        return LearnedGameplay.discard(player, valid, result);
     }
 
     public static Card reanimationTarget(final Player player, final List<Card> legalChoices) {
@@ -179,11 +179,12 @@ public final class OldschoolReanimatorAi {
             }
             if (score > bestScore) { best = card; bestScore = score; }
         }
+        final Card selected = LearnedGameplay.target(player, legalChoices, best);
         if (AiDecisionTrace.active()) {
             AiDecisionTrace.record(player, "reanimate-target", "candidates=" + AiDecisionTrace.cards(legalChoices)
-                    + "; chosen=" + (best == null ? "none" : best.getName()));
+                    + "; chosen=" + (selected == null ? "none" : selected.getName()));
         }
-        return best;
+        return selected;
     }
 
     public static Card copyTarget(final Iterable<Card> legalChoices) {

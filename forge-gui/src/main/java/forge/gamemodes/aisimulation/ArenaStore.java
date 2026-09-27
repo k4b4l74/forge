@@ -11,6 +11,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -176,10 +177,23 @@ public final class ArenaStore implements AutoCloseable {
                 }
                 channel.force(true);
             }
-            try {
-                Files.move(temporary, destination, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-            } catch (AtomicMoveNotSupportedException exception) {
-                Files.move(temporary, destination, StandardCopyOption.REPLACE_EXISTING);
+            for (int attempt = 0; ; attempt++) {
+                try {
+                    try {
+                        Files.move(temporary, destination, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+                    } catch (AtomicMoveNotSupportedException exception) {
+                        Files.move(temporary, destination, StandardCopyOption.REPLACE_EXISTING);
+                    }
+                    break;
+                } catch (AccessDeniedException exception) {
+                    if (attempt >= 39) { throw exception; }
+                    try {
+                        Thread.sleep(25);
+                    } catch (InterruptedException interrupted) {
+                        Thread.currentThread().interrupt();
+                        throw new IOException("Interrupted while replacing " + destination, interrupted);
+                    }
+                }
             }
         } finally {
             Files.deleteIfExists(temporary);

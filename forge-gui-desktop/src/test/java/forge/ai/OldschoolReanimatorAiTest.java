@@ -56,6 +56,54 @@ public class OldschoolReanimatorAiTest extends AITest {
     }
 
     @Test
+    public void learnedChoicesDoNotControlMulligansAndAreScopedToOneGame() throws Exception {
+        final Game game = initAndCreateGame();
+        final Player player = specialist(game);
+        final CardCollection cards = hand(player, "Bayou", "Underground Sea", "Animate Dead", "Triskelion", "Copy Artifact");
+        final CardCollection teacher = OldschoolReanimatorAi.discard(player, cards, 1);
+        final boolean keep = OldschoolReanimatorAi.keepHand(player, 0);
+        final List<String> calls = new ArrayList<>();
+        try (AutoCloseable ignored = LearnedGameplay.install(game, (acting, kind, options, baseline) -> {
+            calls.add(kind);
+            assertEquals(acting, player);
+            return options.size() - 1;
+        })) {
+            assertEquals(OldschoolReanimatorAi.keepHand(player, 0), keep);
+            assertTrue(calls.isEmpty());
+            assertEquals(OldschoolReanimatorAi.discard(player, cards, 1).getFirst().getName(), "Copy Artifact");
+            assertEquals(calls, List.of("discard-choice"));
+        }
+        assertEquals(OldschoolReanimatorAi.discard(player, cards, 1), teacher);
+        try (AutoCloseable ignored = LearnedGameplay.install(game, (acting, kind, options, baseline) -> 128)) {
+            assertEquals(OldschoolReanimatorAi.discard(player, cards, 1), teacher);
+        }
+    }
+
+    @Test
+    public void collectionPreservesDiscardOrderAndObservationExcludesHiddenCards() throws Exception {
+        final Game game = initAndCreateGame();
+        final Player player = specialist(game);
+        final Player opponent = game.getPlayers().get(0);
+        final CardCollection cards = hand(player, "Bayou", "Underground Sea", "Animate Dead", "Triskelion", "Copy Artifact");
+        final CardCollection teacher = OldschoolReanimatorAi.discard(player, cards, 3);
+        try (AutoCloseable ignored = LearnedGameplay.install(game, (acting, kind, options, baseline) -> baseline)) {
+            assertEquals(new ArrayList<>(OldschoolReanimatorAi.discard(player, cards, 3)), new ArrayList<>(teacher));
+        }
+        final Card hidden = addCardToZone("Lightning Bolt", opponent, ZoneType.Hand);
+        final Card unseen = addCardToZone("Ancestral Recall", player, ZoneType.Library);
+        final List<List<Card>> options = List.of(List.of(cards.get(0)), List.of(cards.get(1)));
+        final List<Integer> before = LearnedObservation.encode(player, "discard-choice", options);
+        opponent.getZone(ZoneType.Hand).remove(hidden);
+        player.getZone(ZoneType.Library).remove(unseen);
+        addCardToZone("Swords to Plowshares", opponent, ZoneType.Hand);
+        addCardToZone("Black Lotus", player, ZoneType.Library);
+        assertEquals(LearnedObservation.encode(player, "discard-choice", options), before);
+        assertTrue(before.stream().allMatch(feature -> feature >= 0 && feature < LearnedObservation.BUCKETS));
+        addCard("Savannah Lions", opponent);
+        assertNotEquals(LearnedObservation.encode(player, "discard-choice", options), before);
+    }
+
+    @Test
     public void protectsAnimateDeadAndManaWhenLoadingTheGraveyard() {
         final Game game = initAndCreateGame();
         final Player player = specialist(game);
