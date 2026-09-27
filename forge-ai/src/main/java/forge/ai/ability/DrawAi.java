@@ -43,9 +43,10 @@ public class DrawAi extends SpellAbilityAi {
     @Override
     protected AiAbilityDecision checkApiLogic(Player ai, SpellAbility sa) {
         Card hostCard = sa.getHostCard();
-        if (OldschoolReanimatorAi.enabled(ai) && "Bazaar of Baghdad".equals(hostCard.getName())
-                && !OldschoolReanimatorAi.useBazaar(ai)) {
-            return new AiAbilityDecision(0, AiPlayDecision.CantPlayAi);
+        if (OldschoolReanimatorAi.enabled(ai) && "Bazaar of Baghdad".equals(hostCard.getName())) {
+            final boolean allowed = OldschoolReanimatorAi.useBazaar(ai);
+            if (AiDecisionTrace.active()) { AiDecisionTrace.record(ai, "bazaar-filter", "allowed=" + allowed); }
+            if (!allowed) { return new AiAbilityDecision(0, AiPlayDecision.CantPlayAi); }
         }
         PhaseHandler ph = ai.getGame().getPhaseHandler();
         boolean aboutToBeMyTurn = ph.getNextTurn().equals(ai) && ph.is(PhaseType.END_OF_TURN);

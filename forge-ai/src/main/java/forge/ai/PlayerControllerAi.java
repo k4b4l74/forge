@@ -776,17 +776,20 @@ public class PlayerControllerAi extends PlayerController {
 
     @Override
     public boolean mulliganKeepHand(Player firstPlayer, int cardsToReturn)  {
-        if (OldschoolReanimatorAi.enabled(player)) {
-            return OldschoolReanimatorAi.keepHand(player.getCardsIn(ZoneType.Hand), cardsToReturn);
-        }
-        return !ComputerUtil.wantMulligan(player, cardsToReturn);
+        final boolean keep = OldschoolReanimatorAi.enabled(player)
+                ? OldschoolReanimatorAi.keepHand(player, cardsToReturn) : !ComputerUtil.wantMulligan(player, cardsToReturn);
+        if (AiDecisionTrace.active()) { AiDecisionTrace.record(player, "mulligan", "return=" + cardsToReturn + "; keep=" + keep); }
+        return keep;
     }
 
     @Override
     public CardCollectionView tuckCardsViaMulligan(CardCollectionView hand, int cardsToReturn) {
         if (OldschoolReanimatorAi.enabled(player)) {
-            final CardCollection bottom = OldschoolReanimatorAi.bottomCards(hand, cardsToReturn);
-            if (bottom != null) { return bottom; }
+            final CardCollection bottom = OldschoolReanimatorAi.bottomCards(player, hand, cardsToReturn);
+            if (bottom != null) {
+                if (AiDecisionTrace.active()) { AiDecisionTrace.record(player, "mulligan-bottom", AiDecisionTrace.cards(bottom).toString()); }
+                return bottom;
+            }
         }
         // TODO This is better than it was before, but still suboptimal (but fast).
         // Maybe score a bunch of hands based on projected hand size and return the "duds"

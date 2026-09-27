@@ -1068,7 +1068,11 @@ public class AiController {
         }
         if (OldschoolReanimatorAi.enabled(player) && sa != null
                 && ("Bazaar of Baghdad".equals(sa.getHostCard().getName()) || "Recall".equals(sa.getHostCard().getName()))) {
-            return OldschoolReanimatorAi.discard(player, validCards, min);
+            final CardCollection discarded = OldschoolReanimatorAi.discard(player, validCards, min);
+            if (AiDecisionTrace.active()) {
+                AiDecisionTrace.record(player, "discard", sa.getHostCard().getName() + ": " + AiDecisionTrace.cards(discarded));
+            }
+            return discarded;
         }
 
         Card sourceCard = null;

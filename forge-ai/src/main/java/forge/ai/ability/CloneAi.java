@@ -1,6 +1,7 @@
 package forge.ai.ability;
 
 import forge.ai.AiAbilityDecision;
+import forge.ai.AiDecisionTrace;
 import forge.ai.AiPlayDecision;
 import forge.ai.ComputerUtilCard;
 import forge.ai.OldschoolReanimatorAi;
@@ -217,7 +218,10 @@ public class CloneAi extends SpellAbilityAi {
 
         if (!isOpp && "Copy Artifact".equals(name) && OldschoolReanimatorAi.enabled(ai)) {
             final Card robot = OldschoolReanimatorAi.copyTarget(options);
-            if (robot != null) { return robot; }
+            if (robot != null) {
+                if (AiDecisionTrace.active()) { AiDecisionTrace.record(ai, "copy-target", robot.getName()); }
+                return robot;
+            }
         }
         Card choice = isOpp ? ComputerUtilCard.getWorstAI(options) : ComputerUtilCard.getBestAI(options);
 

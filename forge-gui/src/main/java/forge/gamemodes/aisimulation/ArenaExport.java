@@ -29,9 +29,9 @@ public final class ArenaExport {
             row(output, "Deck", "Opponent", "Wins", "Losses", "Draws", "Timeouts", "Errors", "Score");
             for (int left = 0; left < configuration.entrants().size(); left++) {
                 for (int right = 0; right < configuration.entrants().size(); right++) {
-                    if (left == right) { continue; }
+                    if (!configuration.hasPairing(left, right)) { continue; }
                     final ArenaStandings.Score score = standings.pairing(left, right);
-                    row(output, configuration.entrants().get(left).source(), configuration.entrants().get(right).source(),
+                    row(output, configuration.entrantLabel(left), configuration.entrantLabel(right),
                             score.wins, score.losses, score.draws, score.timeouts, score.errors, number(score.score()));
                 }
             }
@@ -40,7 +40,7 @@ public final class ArenaExport {
             row(output, "Match", "DeckA", "DeckB", "Outcome", "Winner", "StartingPlayer", "Seed", "Turns", "Milliseconds", "Detail");
             for (final ArenaResult result : results) {
                 final ArenaSchedule.Task task = ArenaSchedule.task(configuration, result.gameId());
-                row(output, result.gameId(), configuration.entrants().get(task.left()).source(), configuration.entrants().get(task.right()).source(),
+                row(output, result.gameId(), configuration.entrantLabel(task.left()), configuration.entrantLabel(task.right()),
                         result.outcome().name(), entrant(configuration, result.winner()), entrant(configuration, result.startingPlayer()),
                         task.seed(), result.turns(), result.durationMillis(), result.detail());
             }
@@ -55,8 +55,8 @@ public final class ArenaExport {
                             result.turns(), result.durationMillis(), result.detail())) : result.games();
                 int number = 0;
                 for (final ArenaResult.GameResult game : games) {
-                    row(output, result.gameId(), ++number, configuration.entrants().get(task.left()).source(),
-                            configuration.entrants().get(task.right()).source(), game.outcome().name(),
+                    row(output, result.gameId(), ++number, configuration.entrantLabel(task.left()),
+                            configuration.entrantLabel(task.right()), game.outcome().name(),
                             entrant(configuration, game.winner()), entrant(configuration, game.startingPlayer()),
                             game.turns(), game.durationMillis(), game.detail(), game.leftSideboardCards(), game.rightSideboardCards());
                 }
@@ -66,7 +66,7 @@ public final class ArenaExport {
     }
 
     private static String entrant(final ArenaConfiguration configuration, final int entrant) {
-        return entrant == -1 ? "" : configuration.entrants().get(entrant).source();
+        return entrant == -1 ? "" : configuration.entrantLabel(entrant);
     }
 
     private static Object number(final double number) { return Double.isFinite(number) ? number : ""; }

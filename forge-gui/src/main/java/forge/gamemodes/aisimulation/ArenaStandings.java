@@ -39,9 +39,11 @@ public final class ArenaStandings {
 
     private final Score[] totals;
     private final Score[][] pairings;
+    private final int rankedEntrants;
 
     public ArenaStandings(final ArenaConfiguration configuration, final Collection<ArenaResult> results) {
         totals = new Score[configuration.entrants().size()];
+        rankedEntrants = configuration.isComparison() ? configuration.comparisonProfiles() : totals.length;
         pairings = new Score[totals.length][totals.length];
         for (int row = 0; row < totals.length; row++) {
             totals[row] = new Score();
@@ -68,7 +70,7 @@ public final class ArenaStandings {
 
     public List<Integer> ranking() {
         final List<Integer> ranking = new ArrayList<>();
-        for (int entrant = 0; entrant < totals.length; entrant++) {
+        for (int entrant = 0; entrant < rankedEntrants; entrant++) {
             ranking.add(entrant);
         }
         ranking.sort(Comparator.<Integer>comparingDouble(entrant ->

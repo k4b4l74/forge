@@ -6,6 +6,15 @@ if [[ ! "$SCREEN_RESOLUTION" =~ ^[1-9][0-9]{2,3}x[1-9][0-9]{2,3}$ ]]; then
     exit 1
 fi
 
+case "${VNC_USE_XDAMAGE:-true}" in
+    true) damage_option=-xdamage ;;
+    false) damage_option=-noxdamage ;;
+    *)
+        echo "VNC_USE_XDAMAGE must be true or false." >&2
+        exit 1
+        ;;
+esac
+
 child_pids=()
 shutdown() {
     trap - EXIT TERM INT
@@ -35,7 +44,7 @@ fi
 
 openbox --sm-disable &
 child_pids+=("$!")
-x11vnc -display "$DISPLAY" -rfbport 5900 -localhost -forever -shared -nopw -noxdamage &
+x11vnc -display "$DISPLAY" -rfbport 5900 -localhost -forever -shared -nopw "$damage_option" &
 child_pids+=("$!")
 websockify --web=/usr/share/novnc/ 6080 localhost:5900 &
 child_pids+=("$!")

@@ -68,6 +68,64 @@ public class OldschoolReanimatorAiTest extends AITest {
     }
 
     @Test
+    public void versionTwoDoesNotKeepCopyArtifactAsUnsupportedDevelopment() {
+        final Game game = initAndCreateGame();
+        final Player player = specialist(game);
+        final CardCollection cards = hand(player, "Bayou", "Underground Sea", "Bazaar of Baghdad", "Copy Artifact",
+                "Triskelion", "Rasputin Dreamweaver", "Erhnam Djinn");
+        assertTrue(OldschoolReanimatorAi.keepHand(player, 0));
+        assertTrue(OldschoolReanimatorAi.keepHand(cards, 0));
+        ((LobbyPlayerAi) player.getLobbyPlayer()).setAiProfile("OS Reanimator v2");
+        assertTrue(OldschoolReanimatorAi.enabled(player));
+        assertFalse(OldschoolReanimatorAi.keepHand(player, 0));
+        assertFalse(player.getController().mulliganKeepHand(player, 0));
+        assertTrue(OldschoolReanimatorAi.keepHand(player, 4));
+        ((LobbyPlayerAi) player.getLobbyPlayer()).setAiProfile("OS Reanimator");
+        assertTrue(OldschoolReanimatorAi.keepHand(player, 0));
+    }
+
+    @Test
+    public void versionTwoKeepsSupportedCopiesAndIntactReanimationPackages() {
+        final Game game = initAndCreateGame();
+        final Player player = specialist(game);
+        ((LobbyPlayerAi) player.getLobbyPlayer()).setAiProfile("OS Reanimator v2");
+        final CardCollection packageHand = hand(player, "Bayou", "Underground Sea", "Bazaar of Baghdad", "Animate Dead",
+                "Triskelion", "Rasputin Dreamweaver", "Copy Artifact");
+        assertTrue(OldschoolReanimatorAi.keepHand(player, 2));
+        final CardCollection bottom = OldschoolReanimatorAi.bottomCards(player, packageHand, 2);
+        assertEquals(bottom.size(), 2);
+        assertFalse(bottom.anyMatch(card -> "Animate Dead".equals(card.getName()) || "Bazaar of Baghdad".equals(card.getName())));
+        final Player other = game.getPlayers().get(0);
+        ((LobbyPlayerAi) other.getLobbyPlayer()).setAiProfile("OS Reanimator v2");
+        hand(other, "Bayou", "Underground Sea", "Mox Jet", "Copy Artifact", "Triskelion", "Rasputin Dreamweaver", "Animate Dead");
+        assertTrue(OldschoolReanimatorAi.keepHand(other, 0));
+    }
+
+    @Test
+    public void decisionTracingIsScopedAndDoesNotExposeOpposingHandContents() {
+        final Game game = initAndCreateGame();
+        final Player player = specialist(game);
+        final Player opponent = game.getPlayers().get(0);
+        hand(player, "Bayou", "Underground Sea", "Bazaar of Baghdad", "Animate Dead", "Triskelion", "Recall", "Copy Artifact");
+        hand(opponent, "Lightning Bolt");
+        addCard("Savannah Lions", opponent);
+        final List<AiDecisionTrace.Entry> entries = new ArrayList<>();
+        final boolean untraced = player.getController().mulliganKeepHand(player, 0);
+        assertFalse(AiDecisionTrace.active());
+        try (AiDecisionTrace ignored = AiDecisionTrace.open(entries::add)) {
+            assertEquals(player.getController().mulliganKeepHand(player, 0), untraced);
+            assertEquals(entries.size(), 1);
+            assertTrue(entries.get(0).hand().contains("Animate Dead"));
+            assertEquals(entries.get(0).opponents().get(0).handSize(), 1);
+            assertTrue(entries.get(0).opponents().get(0).battlefield().contains("Savannah Lions"));
+            assertFalse(entries.get(0).toString().contains("Lightning Bolt"));
+        }
+        assertFalse(AiDecisionTrace.active());
+        player.getController().mulliganKeepHand(player, 0);
+        assertEquals(entries.size(), 1);
+    }
+
+    @Test
     public void distinguishesManaPayoffFromStabilizationAndCopiesFreshRobotCounters() {
         final Game game = initAndCreateGame();
         final Player player = specialist(game);

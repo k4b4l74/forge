@@ -46,7 +46,7 @@ public final class OldschoolReanimatorAi {
         return !card.getManaAbilities().isEmpty() && (card.isLand() || card.getCMC() == 0);
     }
 
-    private static int handScore(final CardCollection hand) {
+    private static int handScore(final CardCollection hand, final boolean versionTwo) {
         int sources = 0;
         int actions = 0;
         boolean black = false;
@@ -76,7 +76,10 @@ public final class OldschoolReanimatorAi {
         for (final Card card : hand) {
             if (!card.isLand() && !source(card) && !"Animate Dead".equals(card.getName())
                     && !"Sol Ring".equals(card.getName()) && card.getCMC() <= sources + 1
-                    && card.getColor().hasNoColorsExcept(ColorSet.fromMask(colors))) { development = true; }
+                    && card.getColor().hasNoColorsExcept(ColorSet.fromMask(colors))
+                    && (!versionTwo || !"Copy Artifact".equals(card.getName())
+                    || hand.anyMatch(candidate -> candidate.isArtifact() && (source(candidate)
+                    || "Sol Ring".equals(candidate.getName()))))) { development = true; }
         }
         if (!reanimate && !development) { return -400; }
         int score = 30 * Math.min(sources, 3) - 45 * Math.max(0, sources - 3) + 10 * actions - 20 * Math.max(0, targets - 1);
@@ -87,6 +90,14 @@ public final class OldschoolReanimatorAi {
     }
 
     public static CardCollection bottomCards(final CardCollectionView hand, final int count) {
+        return bottomCards(hand, count, false);
+    }
+
+    public static CardCollection bottomCards(final Player player, final CardCollectionView hand, final int count) {
+        return bottomCards(hand, count, AiProfileUtil.getBoolProperty(player, AiProps.OS_REANIMATOR_V2));
+    }
+
+    private static CardCollection bottomCards(final CardCollectionView hand, final int count, final boolean versionTwo) {
         final List<Card> cards = new ArrayList<>();
         hand.forEach(cards::add);
         if (cards.size() > 10 || count < 0 || count > cards.size()) { return null; }
@@ -100,19 +111,28 @@ public final class OldschoolReanimatorAi {
                 if ((mask & 1 << index) != 0) { kept.add(cards.get(index)); }
                 else { bottom.add(cards.get(index)); }
             }
-            final int score = handScore(kept);
+            final int score = handScore(kept, versionTwo);
             if (score > bestScore) { bestScore = score; best = bottom; }
         }
         return best;
     }
 
     public static boolean keepHand(final CardCollectionView hand, final int cardsToReturn) {
+        return keepHand(hand, cardsToReturn, false);
+    }
+
+    public static boolean keepHand(final Player player, final int cardsToReturn) {
+        return keepHand(player.getCardsIn(ZoneType.Hand), cardsToReturn,
+                AiProfileUtil.getBoolProperty(player, AiProps.OS_REANIMATOR_V2));
+    }
+
+    private static boolean keepHand(final CardCollectionView hand, final int cardsToReturn, final boolean versionTwo) {
         if (hand.size() - cardsToReturn <= 3) { return true; }
-        final CardCollection bottom = bottomCards(hand, cardsToReturn);
+        final CardCollection bottom = bottomCards(hand, cardsToReturn, versionTwo);
         if (bottom == null) { return true; }
         final CardCollection kept = new CardCollection(hand);
         kept.removeAll(bottom);
-        return handScore(kept) >= 0;
+        return handScore(kept, versionTwo) >= 0;
     }
 
     public static boolean useBazaar(final Player player) {
@@ -158,6 +178,10 @@ public final class OldschoolReanimatorAi {
                 score = robotInHand && !player.isCardInPlay("Rasputin Dreamweaver") ? 450 : 180;
             }
             if (score > bestScore) { best = card; bestScore = score; }
+        }
+        if (AiDecisionTrace.active()) {
+            AiDecisionTrace.record(player, "reanimate-target", "candidates=" + AiDecisionTrace.cards(legalChoices)
+                    + "; chosen=" + (best == null ? "none" : best.getName()));
         }
         return best;
     }

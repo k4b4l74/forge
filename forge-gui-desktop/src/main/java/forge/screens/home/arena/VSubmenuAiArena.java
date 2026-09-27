@@ -52,6 +52,9 @@ public enum VSubmenuAiArena implements IVSubmenu<CSubmenuAiArena> {
 
     public record Selection(DeckProxy deck, String profile) { }
     public record History(Path directory, ArenaConfiguration configuration, ArenaStore.Metadata metadata, int completed) { }
+    private record DeckChoice(DeckProxy deck) {
+        @Override public String toString() { return deck.getPath() + "/" + deck.getName(); }
+    }
 
     private final Localizer localizer = Localizer.getInstance();
     private final DragTab tab = new DragTab(text("lblAiArena"));
@@ -70,6 +73,16 @@ public enum VSubmenuAiArena implements IVSubmenu<CSubmenuAiArena> {
     private final FComboBox<String> defaultProfile = new FComboBox<>();
     private final FComboBox<String> rowProfile = new FComboBox<>();
     private final FComboBox<String> matchFormat = new FComboBox<>();
+    private final FComboBox<String> mode = new FComboBox<>();
+    private final FComboBox<DeckChoice> testDeck = new FComboBox<>();
+    private final JPanel comparisonSettings = transparent("insets 0, fillx, hidemode 3, wrap 2");
+    private final FLabel deckHeading = label(text("lblArenaDecks"));
+    private final DefaultTableModel profileModel = new DefaultTableModel(new Object[]{text("lblArenaSelected"),
+            text("lblArenaProfile")}, 0) {
+        @Override public boolean isCellEditable(final int row, final int column) { return column == 0; }
+        @Override public Class<?> getColumnClass(final int column) { return column == 0 ? Boolean.class : String.class; }
+    };
+    private final JTable profileTable = table(profileModel);
     private final DefaultTableModel deckModel = new DefaultTableModel(new Object[]{text("lblArenaSelected"),
             text("lblArenaDeck"), text("lblArenaFolder"), text("lblArenaProfile")}, 0) {
         @Override
@@ -113,6 +126,8 @@ public enum VSubmenuAiArena implements IVSubmenu<CSubmenuAiArena> {
         panel.add(label(text("lblAiArena")), BorderLayout.NORTH);
         panel.add(tabs, BorderLayout.CENTER);
         deckModel.addTableModelListener(event -> updateCounts());
+        profileModel.addTableModelListener(event -> updateCounts());
+        mode.addActionListener(event -> updateMode());
         games.addChangeListener(event -> updateCounts());
         matchFormat.addActionListener(event -> updateCounts());
         search.getDocument().addDocumentListener(new DocumentListener() {
@@ -127,7 +142,7 @@ public enum VSubmenuAiArena implements IVSubmenu<CSubmenuAiArena> {
     }
 
     private JPanel setup() {
-        final JPanel setup = transparent("insets 10, fill, wrap 1");
+        final JPanel setup = transparent("insets 10, fill, hidemode 3, wrap 1");
         final JPanel heading = transparent("insets 0, fillx");
         heading.add(label(text("lblArenaName")));
         heading.add(name, "growx, pushx, w 160:240:");
@@ -136,6 +151,20 @@ public enum VSubmenuAiArena implements IVSubmenu<CSubmenuAiArena> {
             for (int row = 0; row < deckModel.getRowCount(); row++) { deckModel.setValueAt(defaultProfile.getSelectedItem(), row, 3); }
         }));
         setup.add(heading, "growx");
+        final JPanel modeSettings = transparent("insets 0, fillx");
+        mode.addItem(text("lblArenaRoundRobin"));
+        mode.addItem(text("lblArenaCompareAi"));
+        modeSettings.add(label(text("lblArenaMode")));
+        modeSettings.add(mode, "w 160:220:");
+        setup.add(modeSettings, "growx");
+        comparisonSettings.add(label(text("lblArenaTestDeck")));
+        comparisonSettings.add(testDeck, "growx, pushx, w 160:300:");
+        comparisonSettings.add(label(text("lblArenaTestProfiles")), "aligny top");
+        profileTable.getColumnModel().getColumn(0).setMaxWidth(70);
+        comparisonSettings.add(new FScrollPane(profileTable, true), "growx, h 80:105:130");
+        setup.add(comparisonSettings, "growx");
+        comparisonSettings.setVisible(false);
+        setup.add(deckHeading, "growx");
         final JPanel filters = transparent("insets 0, fillx");
         filters.add(search, "growx, pushx, w 100:200:");
         filters.add(button("lblArenaRefresh", () -> controller().refreshDecks()));
@@ -211,6 +240,13 @@ public enum VSubmenuAiArena implements IVSubmenu<CSubmenuAiArena> {
     }
 
     public void setDecks(final List<DeckProxy> available) {
+        if (deckTable.isEditing()) { deckTable.getCellEditor().stopCellEditing(); }
+        if (profileTable.isEditing()) { profileTable.getCellEditor().stopCellEditing(); }
+        final DeckChoice previousDeck = testDeck.getSelectedItem();
+        final Map<String, Boolean> previousProfiles = new HashMap<>();
+        for (int row = 0; row < profileModel.getRowCount(); row++) {
+            previousProfiles.put((String) profileModel.getValueAt(row, 1), Boolean.TRUE.equals(profileModel.getValueAt(row, 0)));
+        }
         final Map<String, Object[]> previous = new HashMap<>();
         for (int row = 0; row < decks.size(); row++) {
             previous.put(decks.get(row).getUniqueKey(), new Object[]{deckModel.getValueAt(row, 0), deckModel.getValueAt(row, 3)});
@@ -220,10 +256,21 @@ public enum VSubmenuAiArena implements IVSubmenu<CSubmenuAiArena> {
         rowProfile.removeAllItems();
         for (final String profile : profiles) { defaultProfile.addItem(profile); rowProfile.addItem(profile); }
         defaultProfile.setSelectedItem("Default");
+        profileModel.setRowCount(0);
+        for (final String profile : profiles) {
+            profileModel.addRow(new Object[]{previousProfiles.getOrDefault(profile,
+                    previousProfiles.isEmpty() && ("Default".equals(profile) || "OS Reanimator".equals(profile))), profile});
+        }
+        testDeck.removeAllItems();
         decks.clear();
         deckModel.setRowCount(0);
         for (final DeckProxy deck : available) {
             decks.add(deck);
+            final DeckChoice choice = new DeckChoice(deck);
+            testDeck.addItem(choice);
+            if (previousDeck != null && previousDeck.deck().getUniqueKey().equals(deck.getUniqueKey())) {
+                testDeck.setSelectedItem(choice);
+            }
             final Object[] old = previous.get(deck.getUniqueKey());
             deckModel.addRow(new Object[]{old != null && Boolean.TRUE.equals(old[0]), deck.getName(), deck.getPath(),
                     old == null || !profiles.contains(old[1]) ? "Default" : old[1]});
@@ -245,19 +292,61 @@ public enum VSubmenuAiArena implements IVSubmenu<CSubmenuAiArena> {
 
     public List<Selection> selection() {
         if (deckTable.isEditing()) { deckTable.getCellEditor().stopCellEditing(); }
+        if (profileTable.isEditing()) { profileTable.getCellEditor().stopCellEditing(); }
         final List<Selection> selection = new ArrayList<>();
+        if (isComparison()) {
+            final DeckChoice selected = testDeck.getSelectedItem();
+            if (selected == null || comparisonProfiles() < 2) {
+                throw new IllegalArgumentException(text("lblArenaComparisonRequired"));
+            }
+            for (int row = 0; row < profileModel.getRowCount(); row++) {
+                if (Boolean.TRUE.equals(profileModel.getValueAt(row, 0))) {
+                    selection.add(new Selection(selected.deck(), (String) profileModel.getValueAt(row, 1)));
+                }
+            }
+        }
         for (int row = 0; row < decks.size(); row++) {
             if (Boolean.TRUE.equals(deckModel.getValueAt(row, 0))) {
                 selection.add(new Selection(decks.get(row), (String) deckModel.getValueAt(row, 3)));
             }
         }
+        if (isComparison() && selection.size() == comparisonProfiles()) {
+            throw new IllegalArgumentException(text("lblArenaOpponentRequired"));
+        }
         return selection;
+    }
+
+    private boolean isComparison() { return mode.getSelectedIndex() == 1; }
+
+    public int comparisonProfiles() {
+        if (!isComparison()) { return 0; }
+        int selected = 0;
+        for (int row = 0; row < profileModel.getRowCount(); row++) {
+            if (Boolean.TRUE.equals(profileModel.getValueAt(row, 0))) { selected++; }
+        }
+        return selected;
+    }
+
+    private void updateMode() {
+        comparisonSettings.setVisible(isComparison());
+        deckHeading.setText(text(isComparison() ? "lblArenaOpponents" : "lblArenaDecks"));
+        start.setText(text(isComparison() ? "lblArenaStartComparison" : "lblArenaStart"));
+        updateCounts();
+        panel.revalidate();
+        panel.repaint();
     }
 
     private void updateCounts() {
         int count = 0;
         for (int row = 0; row < deckModel.getRowCount(); row++) {
             if (Boolean.TRUE.equals(deckModel.getValueAt(row, 0))) { count++; }
+        }
+        if (isComparison()) {
+            final long perProfile = (long) count * gamesPerPair();
+            counts.setText(localizer.getMessage("lblArenaComparisonCounts", Integer.toString(comparisonProfiles()),
+                    Integer.toString(count), Long.toString(perProfile * comparisonProfiles()), Long.toString(perProfile),
+                    "BO" + gamesPerMatch()));
+            return;
         }
         final long pairings = (long) count * (count - 1) / 2;
         counts.setText(localizer.getMessage(gamesPerMatch() == 3 ? "lblArenaCountsBO3" : "lblArenaCounts", Integer.toString(count), Long.toString(pairings),
@@ -293,14 +382,16 @@ public enum VSubmenuAiArena implements IVSubmenu<CSubmenuAiArena> {
     }
 
     public void display(final ArenaStore store, final ArenaRunner.Progress snapshot) {
+        final ArenaConfiguration configuration = store.configuration();
         progress.setIndeterminate(false);
         progress.setMaximum(snapshot.total());
         progress.setValue(snapshot.finished());
         progress.setString(snapshot.finished() + " / " + snapshot.total());
         final double perMinute = snapshot.elapsedMillis() == 0 ? 0 : snapshot.finished() * 60000.0 / snapshot.elapsedMillis();
         final String eta = perMinute <= 0 ? "—" : duration((long) ((snapshot.total() - snapshot.finished()) * 60000.0 / perMinute));
-        status.setText(localizer.getMessage("lblArenaProgress", store.configuration().name() + " (BO"
-                + store.configuration().gamesPerMatch() + ")", state(snapshot.state()),
+        status.setText(localizer.getMessage("lblArenaProgress", configuration.name() + " ("
+                + (configuration.isComparison() ? text("lblArenaCompareAi") + ", " : "") + "BO"
+                + configuration.gamesPerMatch() + ")", state(snapshot.state()),
                 duration(snapshot.elapsedMillis()), String.format("%.1f", perMinute), eta));
         if (snapshot.message() != null && !snapshot.message().isBlank()) {
             activity.setText(snapshot.message());
@@ -308,8 +399,7 @@ public enum VSubmenuAiArena implements IVSubmenu<CSubmenuAiArena> {
         } else {
             final List<String> pairings = new ArrayList<>();
             for (final ArenaSchedule.Task task : snapshot.active()) {
-                pairings.add(store.configuration().entrants().get(task.left()).name() + " / "
-                        + store.configuration().entrants().get(task.right()).name());
+                pairings.add(configuration.entrantLabel(task.left()) + " / " + configuration.entrantLabel(task.right()));
             }
             activity.setText(pairings.isEmpty() ? text("lblArenaNoActiveGames") : String.join("; ", pairings));
             activity.setToolTipText(activity.getText());
@@ -329,30 +419,36 @@ public enum VSubmenuAiArena implements IVSubmenu<CSubmenuAiArena> {
                     decimal(score.averageTurns()), decimal(score.averageSeconds())});
         }
         final List<String> columns = new ArrayList<>(List.of(text("lblArenaDeck")));
-        for (final ArenaConfiguration.Entrant entry : store.configuration().entrants()) { columns.add(entry.source()); }
+        final int firstOpponent = configuration.comparisonProfiles();
+        final int matrixRows = configuration.isComparison() ? firstOpponent : configuration.entrants().size();
+        for (int opponent = firstOpponent; opponent < configuration.entrants().size(); opponent++) {
+            columns.add(configuration.entrantLabel(opponent));
+        }
         matrixModel.setColumnIdentifiers(columns.toArray());
         matrixModel.setRowCount(0);
-        for (int left = 0; left < store.configuration().entrants().size(); left++) {
+        for (int left = 0; left < matrixRows; left++) {
             final Object[] row = new Object[columns.size()];
-            row[0] = store.configuration().entrants().get(left).source();
-            for (int right = 0; right < columns.size() - 1; right++) {
+            row[0] = configuration.entrantLabel(left);
+            for (int right = firstOpponent; right < configuration.entrants().size(); right++) {
                 final double score = standings.pairing(left, right).score();
-                row[right + 1] = left == right || Double.isNaN(score) ? "—" : score;
+                row[right - firstOpponent + 1] = left == right || Double.isNaN(score) ? "—" : score;
             }
             matrixModel.addRow(row);
         }
-        matrix.getColumnModel().getColumn(0).setPreferredWidth(160);
+        for (int column = 0; column < matrix.getColumnCount(); column++) {
+            matrix.getColumnModel().getColumn(column).setPreferredWidth(configuration.isComparison() ? 240 : 160);
+        }
         failuresModel.setRowCount(0);
         matchesModel.setRowCount(0);
         for (final ArenaResult result : completed) {
             final ArenaSchedule.Task pairing = ArenaSchedule.task(store.configuration(), result.gameId());
-            matchesModel.addRow(new Object[]{result.gameId(), store.configuration().entrants().get(pairing.left()).source()
-                    + " / " + store.configuration().entrants().get(pairing.right()).source(), result.winner() < 0 ? "-"
-                    : store.configuration().entrants().get(result.winner()).source(), result.detail()});
+            matchesModel.addRow(new Object[]{result.gameId(), configuration.entrantLabel(pairing.left())
+                    + " / " + configuration.entrantLabel(pairing.right()), result.winner() < 0 ? "-"
+                    : configuration.entrantLabel(result.winner()), result.detail()});
             if (result.isValidGame()) { continue; }
             final ArenaSchedule.Task task = ArenaSchedule.task(store.configuration(), result.gameId());
-            failuresModel.addRow(new Object[]{result.gameId(), store.configuration().entrants().get(task.left()).source() + " / "
-                    + store.configuration().entrants().get(task.right()).source(), text("lblArena" + result.outcome().name()), result.detail()});
+            failuresModel.addRow(new Object[]{result.gameId(), configuration.entrantLabel(task.left()) + " / "
+                    + configuration.entrantLabel(task.right()), text("lblArena" + result.outcome().name()), result.detail()});
         }
     }
 
@@ -363,7 +459,8 @@ public enum VSubmenuAiArena implements IVSubmenu<CSubmenuAiArena> {
         for (final History run : history) {
             final ArenaStore.State saved = run.metadata().state();
             historyModel.addRow(new Object[]{DateFormat.getDateTimeInstance().format(new Date(run.configuration().createdAt())),
-                    run.configuration().name() + " (BO" + run.configuration().gamesPerMatch() + ")", saved == ArenaStore.State.RUNNING || saved == ArenaStore.State.PAUSING
+                    run.configuration().name() + " (" + (run.configuration().isComparison() ? text("lblArenaCompareAi") + ", " : "")
+                            + "BO" + run.configuration().gamesPerMatch() + ")", saved == ArenaStore.State.RUNNING || saved == ArenaStore.State.PAUSING
                     ? text("lblArenaInterrupted") : state(saved), run.completed(), run.configuration().totalGames()});
         }
     }

@@ -32,6 +32,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -64,6 +66,7 @@ public final class ArenaWorkerMain {
             final String assets = Path.of(args[1]).toAbsolutePath() + File.separator;
             final ArenaConfiguration configuration = ArenaStore.JSON.fromJson(
                     Files.readString(runDirectory.resolve("run.json")), ArenaConfiguration.class);
+            final Set<Integer> tracedMatches = ArenaDecisionTrace.selectedMatches(runDirectory, configuration);
             GuiBase.setInterface(new GuiDesktop() {
                 @Override
                 public String getAssetsDir() { return assets; }
@@ -94,7 +97,12 @@ public final class ArenaWorkerMain {
                         || request.task() == null || !ArenaSchedule.task(configuration, request.task().gameId()).equals(request.task())) {
                     throw new IllegalArgumentException("Invalid worker protocol request");
                 }
-                final ArenaResult result = play(configuration, decks, request.task());
+                final ArenaResult result;
+                try (ArenaDecisionTrace trace = tracedMatches.contains(request.task().gameId())
+                        ? new ArenaDecisionTrace(runDirectory, configuration, request.task()) : null) {
+                    result = play(configuration, decks, request.task(), trace);
+                    if (trace != null) { trace.write(Map.of("kind", "result", "result", result)); }
+                }
                 protocol.println(ArenaStore.JSON.toJson(ArenaProtocol.result(result)));
                 protocol.flush();
                 if (!result.isValidGame()) { System.exit(2); }
@@ -108,7 +116,7 @@ public final class ArenaWorkerMain {
     }
 
     private static ArenaResult play(final ArenaConfiguration configuration, final List<Deck> decks,
-                                     final ArenaSchedule.Task task) {
+                                     final ArenaSchedule.Task task, final ArenaDecisionTrace trace) {
         final long started = System.nanoTime();
         try {
             MyRandom.setRandom(new Random(task.seed()));
@@ -129,8 +137,10 @@ public final class ArenaWorkerMain {
                 final long gameStarted = System.nanoTime();
                 final Game game = match.createGame();
                 game.setNoGUIUser();
+                if (trace != null) { trace.beginGame(games.size() + 1); }
                 match.startGame(game, null, games.isEmpty()
                         ? players.get(task.firstToChoose() == task.left() ? 0 : 1) : null);
+                if (trace != null) { trace.endGame(game); }
                 final GameOutcome outcome = game.getOutcome();
                 if (outcome == null) { throw new IllegalStateException("Game returned without an outcome"); }
                 final int gameWinner = outcome.isDraw() ? -1 : outcome.isWinner(players.get(0)) ? task.left() : task.right();

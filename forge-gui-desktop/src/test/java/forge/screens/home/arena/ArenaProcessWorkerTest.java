@@ -1,5 +1,6 @@
 package forge.screens.home.arena;
 
+import forge.ai.AiDecisionTrace;
 import forge.gamemodes.aisimulation.ArenaConfiguration;
 import forge.gamemodes.aisimulation.ArenaFingerprint;
 import forge.gamemodes.aisimulation.ArenaProtocol;
@@ -7,6 +8,8 @@ import forge.gamemodes.aisimulation.ArenaResult;
 import forge.gamemodes.aisimulation.ArenaRunner;
 import forge.gamemodes.aisimulation.ArenaSchedule;
 import forge.gamemodes.aisimulation.ArenaStore;
+import forge.view.ArenaDecisionTrace;
+import forge.view.ArenaReplayMain;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -21,7 +24,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.testng.Assert.assertEquals;
@@ -72,6 +78,58 @@ public class ArenaProcessWorkerTest {
                 "test", ArenaFingerprint.calculate(List.of(directory.resolve("inputs"))), games, 2, 1024, timeout, entrants, gamesPerMatch));
     }
 
+    @Test
+    public void validatesTraceSelectionsAndCapsOutput() throws Exception {
+        try (ArenaStore store = create(1100, 90)) {
+            final ArenaConfiguration configuration = store.configuration();
+            final Path selection = directory.resolve("trace-matches.txt");
+            assertTrue(ArenaDecisionTrace.selectedMatches(directory, configuration).isEmpty());
+            Files.writeString(selection, "0, 1\n1\t2");
+            assertEquals(ArenaDecisionTrace.selectedMatches(directory, configuration), Set.of(0, 1, 2));
+            for (final String invalid : List.of("-1", "1100", "abc", "0 ".repeat(32769),
+                    IntStream.rangeClosed(0, 1000).mapToObj(Integer::toString).collect(Collectors.joining(",")))) {
+                Files.writeString(selection, invalid);
+                expectThrows(IOException.class, () -> ArenaDecisionTrace.selectedMatches(directory, configuration));
+            }
+            try (ArenaDecisionTrace trace = new ArenaDecisionTrace(directory, configuration, ArenaSchedule.task(configuration, 0))) {
+                trace.write("large".repeat(500000));
+                trace.write("should not appear");
+            }
+            assertFalse(AiDecisionTrace.active());
+            try (Stream<Path> paths = Files.list(directory.resolve("traces"))) {
+                final Path trace = paths.findFirst().orElseThrow();
+                assertTrue(Files.size(trace) < 2 * 1024 * 1024 + 100);
+                final String text = Files.readString(trace);
+                assertTrue(text.contains("\"kind\":\"truncated\""));
+                assertFalse(text.contains("should not appear"));
+            }
+        }
+    }
+
+    @Test(timeOut = 180000)
+    public void diagnosticReplayPreservesSourceAndRefusesExistingOutput() throws Exception {
+        try (ArenaStore initial = create(2, 90)) {
+            final Path source = directory.resolve("source");
+            final Path output = directory.resolve("replay");
+            ArenaFiles.copyTree(directory.resolve("inputs"), source.resolve("inputs"));
+            try (ArenaStore original = ArenaStore.create(source, initial.configuration())) {
+                final String before = ArenaFingerprint.calculate(List.of(source));
+                final String[] arguments = {source.toString(), assets.toString(), output.toString(), "0"};
+                ArenaReplayMain.main(arguments);
+                assertEquals(ArenaFingerprint.calculate(List.of(source)), before);
+                assertEquals(original.completed(), 0);
+                try (ArenaStore replay = new ArenaStore(output)) {
+                    assertEquals(replay.completed(), 1);
+                    assertEquals(replay.metadata().state(), ArenaStore.State.PAUSED);
+                    assertTrue(replay.results().get(0).isValidGame());
+                }
+                expectThrows(java.nio.file.FileAlreadyExistsException.class, () -> ArenaReplayMain.main(arguments));
+                arguments[2] = source.resolve("nested").toString();
+                expectThrows(IllegalArgumentException.class, () -> ArenaReplayMain.main(arguments));
+            }
+        }
+    }
+
     @Test(timeOut = 180000)
     public void playsKabalReanimatorWithTheDedicatedProfile() throws Exception {
         Files.copy(assets.resolve("res/ai/OS Reanimator.ai"), directory.resolve("inputs/profiles/OS Reanimator.ai"));
@@ -90,6 +148,62 @@ public class ArenaProcessWorkerTest {
             result.validate(store.configuration());
             assertEquals(result.games().get(0).leftSideboardCards(), 0);
             assertTrue(result.games().stream().skip(1).anyMatch(game -> game.leftSideboardCards() > 0), result.toString());
+        }
+    }
+
+    @Test(timeOut = 180000)
+    public void comparesTheSameDeckWithDifferentProfilesInBo3() throws Exception {
+        Files.move(directory.resolve("inputs/decks/1.dck"), directory.resolve("inputs/decks/2.dck"));
+        Files.copy(directory.resolve("inputs/decks/0.dck"), directory.resolve("inputs/decks/1.dck"));
+        final List<ArenaConfiguration.Entrant> entrants = List.of(
+                new ArenaConfiguration.Entrant("Red", "Red", "Default"),
+                new ArenaConfiguration.Entrant("Red", "Red", "Reckless"),
+                new ArenaConfiguration.Entrant("White", "White", "Default"));
+        final String fingerprint = ArenaFingerprint.calculate(List.of(directory.resolve("inputs")));
+        final ArenaConfiguration configuration = new ArenaConfiguration(ArenaConfiguration.VERSION, "comparison-worker", "Compare", 0,
+                4321, "test", fingerprint, 1, 1, 1024, 60, entrants, 3, 2);
+        try (ArenaStore store = ArenaStore.create(directory, configuration);
+             ArenaProcessWorker worker = new ArenaProcessWorker(store, 0, assets)) {
+            for (int match = 0; match < configuration.totalGames(); match++) {
+                final ArenaSchedule.Task task = ArenaSchedule.task(configuration, match);
+                final ArenaResult result = worker.play(task);
+                assertTrue(result.isValidGame(), result.toString());
+                result.validate(configuration);
+                assertEquals(result.startingPlayer(), task.firstToChoose());
+                assertTrue(result.games().size() >= 2);
+                assertEquals(result.games().get(0).leftSideboardCards(), 0);
+            }
+            assertEquals(ArenaFingerprint.calculate(List.of(directory.resolve("inputs"))), fingerprint);
+        }
+    }
+
+    @Test(timeOut = 180000)
+    public void selectedTracesStaySeparateAndDoNotChangeSeededOutcomes() throws Exception {
+        try (ArenaStore store = create(1, 90, 3)) {
+            final ArenaSchedule.Task task = ArenaSchedule.task(store.configuration(), 0);
+            final ArenaResult baseline;
+            try (ArenaProcessWorker worker = new ArenaProcessWorker(store, 0, assets)) { baseline = worker.play(task); }
+            assertTrue(baseline.isValidGame(), baseline.toString());
+            assertFalse(Files.exists(directory.resolve("traces")));
+            Files.writeString(directory.resolve("trace-matches.txt"), "0");
+            final ArenaResult traced;
+            try (ArenaProcessWorker worker = new ArenaProcessWorker(store, 1, assets)) { traced = worker.play(task); }
+            assertTrue(traced.isValidGame(), traced.toString());
+            assertEquals(traced.winner(), baseline.winner());
+            assertEquals(traced.turns(), baseline.turns());
+            assertEquals(traced.games().size(), baseline.games().size());
+            for (int index = 0; index < traced.games().size(); index++) {
+                assertEquals(traced.games().get(index).winner(), baseline.games().get(index).winner());
+                assertEquals(traced.games().get(index).startingPlayer(), baseline.games().get(index).startingPlayer());
+            }
+            final Path trace;
+            try (Stream<Path> paths = Files.list(directory.resolve("traces"))) { trace = paths.findFirst().orElseThrow(); }
+            final String contents = Files.readString(trace);
+            assertTrue(contents.contains("\"decision\":\"mulligan\""));
+            assertTrue(contents.contains("\"kind\":\"game-log\""));
+            assertTrue(contents.contains("\"kind\":\"result\""));
+            assertTrue(contents.contains("\"game\":2"));
+            assertTrue(Files.size(trace) < 2 * 1024 * 1024 + 100);
         }
     }
 

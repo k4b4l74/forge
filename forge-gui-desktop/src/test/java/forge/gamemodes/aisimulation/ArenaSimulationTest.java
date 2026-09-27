@@ -44,6 +44,108 @@ public class ArenaSimulationTest {
         return new ArenaConfiguration(1, "test-run", "Test", 0, 1234, "build", "inputs", games, workers, 512, 2, decks);
     }
 
+    private ArenaConfiguration comparison(final int matches, final int gamesPerMatch) {
+        return new ArenaConfiguration(ArenaConfiguration.VERSION, "comparison", "Compare KabaL", 0, 1234,
+                "build", "inputs", matches, 2, 512, 120, List.of(
+                new ArenaConfiguration.Entrant("KabaL", "folder/KabaL", "Default"),
+                new ArenaConfiguration.Entrant("KabaL", "folder/KabaL", "OS Reanimator"),
+                new ArenaConfiguration.Entrant("Red", "folder/Red", "Reckless"),
+                new ArenaConfiguration.Entrant("Control", "folder/Control", "Cautious")), gamesPerMatch, 2);
+    }
+
+    @Test
+    public void comparesOnlyTestProfilesAgainstOpponentsWithMatchedSeedsAndStarts() {
+        for (final int matches : List.of(5, 6)) {
+            final ArenaConfiguration configuration = comparison(matches, 3);
+            final Map<String, Integer> counts = new HashMap<>();
+            final Map<String, Integer> starts = new HashMap<>();
+            assertEquals(configuration.totalGames(), 4 * matches);
+            for (int match = 0; match < configuration.totalGames(); match += 2) {
+                final ArenaSchedule.Task baseline = ArenaSchedule.task(configuration, match);
+                final ArenaSchedule.Task candidate = ArenaSchedule.task(configuration, match + 1);
+                assertEquals(baseline.left(), 0);
+                assertEquals(candidate.left(), 1);
+                assertEquals(baseline.right(), candidate.right());
+                assertEquals(baseline.seed(), candidate.seed());
+                assertEquals(baseline.firstToChoose() == baseline.left(), candidate.firstToChoose() == candidate.left());
+                for (final ArenaSchedule.Task task : List.of(baseline, candidate)) {
+                    assertTrue(task.right() >= 2);
+                    assertTrue(configuration.hasPairing(task.left(), task.right()));
+                    final String pair = task.left() + ":" + task.right();
+                    counts.merge(pair, 1, Integer::sum);
+                    if (task.firstToChoose() == task.left()) { starts.merge(pair, 1, Integer::sum); }
+                }
+            }
+            assertEquals(counts.size(), 4);
+            for (final String pair : counts.keySet()) {
+                assertEquals(counts.get(pair).intValue(), matches);
+                assertTrue(Math.abs(2 * starts.get(pair) - matches) <= 1);
+            }
+            assertFalse(configuration.hasPairing(0, 1));
+            assertFalse(configuration.hasPairing(2, 3));
+        }
+    }
+
+    @Test
+    public void validatesComparisonDeckIdentityAndPreservesOlderConfigurations() {
+        final ArenaConfiguration valid = comparison(10, 1);
+        final List<ArenaConfiguration.Entrant> entrants = new ArrayList<>(valid.entrants());
+        entrants.set(1, entrants.get(0));
+        expectThrows(IllegalArgumentException.class, () -> new ArenaConfiguration(ArenaConfiguration.VERSION,
+                "invalid", "Invalid", 0, 1, "build", "inputs", 1, 1, 512, 10, entrants, 1, 2));
+        entrants.set(1, new ArenaConfiguration.Entrant("Other", "folder/Other", "OS Reanimator"));
+        expectThrows(IllegalArgumentException.class, () -> new ArenaConfiguration(ArenaConfiguration.VERSION,
+                "invalid", "Invalid", 0, 1, "build", "inputs", 1, 1, 512, 10, entrants, 1, 2));
+        expectThrows(IllegalArgumentException.class, () -> ArenaConfiguration.gameCount(3, 10, 1));
+        expectThrows(IllegalArgumentException.class, () -> ArenaConfiguration.gameCount(2, 10, 2));
+        expectThrows(IllegalArgumentException.class, () -> ArenaConfiguration.gameCount(100000, 100000, 50000));
+        for (final int version : List.of(1, 2)) {
+            final ArenaConfiguration old = new ArenaConfiguration(version, "legacy", "Legacy", 0, 1,
+                    "build", "inputs", 4, 1, 512, 10, configuration(2, 4, 1).entrants(), version == 1 ? 1 : 3);
+            final String json = ArenaStore.JSON.toJson(old).replace(",\"comparisonProfiles\":0", "");
+            final ArenaConfiguration restored = ArenaStore.JSON.fromJson(json, ArenaConfiguration.class);
+            assertFalse(restored.isComparison());
+            assertEquals(restored.gamesPerMatch(), old.gamesPerMatch());
+            assertEquals(ArenaSchedule.task(restored, 3), ArenaSchedule.task(old, 3));
+        }
+    }
+
+    @Test
+    public void persistsAndExportsSeparateAiResultsWithoutRankingTheOpponentPool() throws Exception {
+        final ArenaConfiguration configuration = comparison(2, 1);
+        try (ArenaStore store = ArenaStore.create(directory, configuration)) {
+            store.claim();
+            for (int match = 0; match < configuration.totalGames(); match++) {
+                final ArenaSchedule.Task task = ArenaSchedule.task(configuration, match);
+                if (match == 0) {
+                    store.append(new ArenaResult(match, ArenaResult.Outcome.ERROR, -1, -1, 0, 0, "failed"));
+                } else {
+                    store.append(new ArenaResult(match, ArenaResult.Outcome.WIN, task.left() == 1 ? task.left() : task.right(),
+                            task.firstToChoose(), 5, 10, "test"));
+                }
+            }
+            final ArenaStandings standings = new ArenaStandings(configuration, store.results());
+            assertEquals(standings.ranking(), List.of(1, 0));
+            assertEquals(standings.total(1).wins, 4);
+            assertEquals(standings.total(0).losses, 3);
+            assertEquals(standings.total(0).errors, 1);
+            assertEquals(standings.pairing(0, 1).validGames(), 0);
+            final Path exported = ArenaExport.export(store);
+            assertEquals(Files.readAllLines(exported.resolve("standings.csv")).size(), 3);
+            assertEquals(Files.readAllLines(exported.resolve("matchups.csv")).size(), 9);
+            for (final String file : List.of("matchups.csv", "matches.csv", "games.csv")) {
+                final String content = Files.readString(exported.resolve(file));
+                assertTrue(content.contains("folder/KabaL [Default]"), file);
+                assertTrue(content.contains("folder/KabaL [OS Reanimator]"), file);
+            }
+        }
+        try (ArenaStore restored = new ArenaStore(directory)) {
+            assertEquals(restored.configuration(), configuration);
+            assertEquals(restored.completed(), configuration.totalGames());
+            assertEquals(ArenaSchedule.task(restored.configuration(), 7), ArenaSchedule.task(configuration, 7));
+        }
+    }
+
     @Test
     public void schedulesEveryPairOnceAndBalancesStarts() {
         final ArenaConfiguration configuration = configuration(10, 100, 2);

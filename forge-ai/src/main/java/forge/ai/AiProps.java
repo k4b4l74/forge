@@ -148,7 +148,8 @@ public enum AiProps {
     SIDEBOARDING_IN_LIMITED_FORMATS("false"),
     SIDEBOARDING_SHARED_TYPE_ONLY("false"),
     SIDEBOARDING_PLANESWALKER_EQ_CREATURE("false"),
-    OS_REANIMATOR("false");
+    OS_REANIMATOR("false"),
+    OS_REANIMATOR_V2("false");
     // Experimental features, must be promoted or removed after extensive testing and, ideally, defaulting
     // <-- There are no experimental options here -->
 

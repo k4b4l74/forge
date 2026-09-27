@@ -68,6 +68,13 @@ public final class ArenaFiles {
     public static ArenaStore create(final String name, final List<ArenaConfiguration.Entrant> entrants,
                                      final List<Deck> decks, final int games, final int workers,
                                      final int heap, final int timeout, final int gamesPerMatch) throws IOException {
+        return create(name, entrants, decks, games, workers, heap, timeout, gamesPerMatch, 0);
+    }
+
+    public static ArenaStore create(final String name, final List<ArenaConfiguration.Entrant> entrants,
+                                     final List<Deck> decks, final int games, final int workers,
+                                     final int heap, final int timeout, final int gamesPerMatch,
+                                     final int comparisonProfiles) throws IOException {
         final String fingerprint = environmentFingerprint();
         final String id = UUID.randomUUID().toString();
         final Path directory = root().resolve(id);
@@ -92,7 +99,7 @@ public final class ArenaFiles {
         copyTree(Path.of(ForgeConstants.USER_CUSTOM_DIR), inputs.resolve("custom"));
         final ArenaConfiguration configuration = new ArenaConfiguration(ArenaConfiguration.VERSION, id, name,
                 System.currentTimeMillis(), ThreadLocalRandom.current().nextLong(), fingerprint,
-                ArenaFingerprint.calculate(List.of(inputs)), games, workers, heap, timeout, entrants, gamesPerMatch);
+                ArenaFingerprint.calculate(List.of(inputs)), games, workers, heap, timeout, entrants, gamesPerMatch, comparisonProfiles);
         return ArenaStore.create(directory, configuration);
     }
 
@@ -106,7 +113,7 @@ public final class ArenaFiles {
         return ArenaStore.create(destination, new ArenaConfiguration(ArenaConfiguration.VERSION, id, previous.name(),
                 System.currentTimeMillis(), ThreadLocalRandom.current().nextLong(), fingerprint, previous.snapshotFingerprint(),
                 previous.gamesPerPair(), previous.workers(), previous.heapMegabytes(), previous.timeoutSeconds(),
-                previous.entrants(), previous.gamesPerMatch()));
+                previous.entrants(), previous.gamesPerMatch(), previous.comparisonProfiles()));
     }
 
     public static void verifySnapshots(final ArenaStore store) throws IOException {

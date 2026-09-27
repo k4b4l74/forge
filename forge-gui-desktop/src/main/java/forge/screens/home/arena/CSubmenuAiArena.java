@@ -19,7 +19,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -77,7 +79,8 @@ public enum CSubmenuAiArena implements ICDoc {
         if (busy || running()) { return; }
         try {
             final List<VSubmenuAiArena.Selection> selections = view().selection();
-            ArenaConfiguration.gameCount(selections.size(), view().gamesPerPair());
+            final int comparisonProfiles = view().comparisonProfiles();
+            ArenaConfiguration.gameCount(selections.size(), view().gamesPerPair(), comparisonProfiles);
             if (view().runName().isBlank()) { throw new IllegalArgumentException(text("lblArenaNameRequired")); }
             final List<ArenaConfiguration.Entrant> entrants = new ArrayList<>();
             final List<Path> deckFiles = new ArrayList<>();
@@ -101,10 +104,15 @@ public enum CSubmenuAiArena implements ICDoc {
             final int gamesPerMatch = view().gamesPerMatch();
             work(text("lblArenaPreparing"), () -> {
                 final List<Deck> snapshots = new ArrayList<>();
+                final Map<Path, Deck> loaded = new HashMap<>();
                 for (int index = 0; index < deckFiles.size(); index++) {
-                    snapshots.add(ArenaFiles.loadDeckSnapshot(deckFiles.get(index), entrants.get(index).name()));
+                    final Path file = deckFiles.get(index);
+                    if (!loaded.containsKey(file)) {
+                        loaded.put(file, ArenaFiles.loadDeckSnapshot(file, entrants.get(index).name()));
+                    }
+                    snapshots.add(loaded.get(file));
                 }
-                return launch(ArenaFiles.create(name, entrants, snapshots, games, workers, heap, timeout, gamesPerMatch));
+                return launch(ArenaFiles.create(name, entrants, snapshots, games, workers, heap, timeout, gamesPerMatch, comparisonProfiles));
             }, this::acceptRun);
         } catch (Exception exception) {
             error(exception);

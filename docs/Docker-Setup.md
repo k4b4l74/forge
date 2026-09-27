@@ -48,9 +48,11 @@ The local file is ignored by Git and excluded from the Docker build context;
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `COMPOSE_PROJECT_NAME` | `forge-local` | Compose project name. |
-| `FORGE_DATA_DIR` | `./data` | Host directory for saves and downloads, relative to the repository root. With WSL, absolute paths must use Linux syntax, such as `/mnt/d/ForgeData`. |
+| `FORGE_DATA_DIR` | `./data` | Host directory for the profile and legacy cache, relative to the repository root. With WSL, absolute paths must use Linux syntax, such as `/mnt/d/ForgeData`. |
+| `FORGE_CACHE_SOURCE` | `forge-cache-linux` in `.env.example` | Linux-backed Docker volume for downloads. An explicit host path, such as `./data/cache`, also works. If unset, Compose retains the legacy `${FORGE_DATA_DIR}/cache` bind mount. Migrate existing downloads before switching. |
 | `FORGE_PORT` | `6080` | Browser port, bound to `127.0.0.1` only. |
 | `SCREEN_RESOLUTION` | `1600x900` | Virtual desktop size, in `WIDTHxHEIGHT` form. |
+| `VNC_USE_XDAMAGE` | `true` | Use X DAMAGE hints to detect screen changes faster. Set `false` if repaint artifacts occur. |
 | `JAVA_MIN_HEAP` | `512m` | Initial Java heap. |
 | `JAVA_MAX_HEAP` | `4g` | Maximum Java heap; leave additional WSL RAM for the desktop and JVM overhead. |
 | `TZ` | `Europe/Paris` | Container timezone. |
@@ -61,35 +63,62 @@ local use; keep the localhost port binding. The raw VNC port is not published.
 
 ## Data and daily commands
 
-Bind mounts preserve user data across container rebuilds/recreation directly on
-the host. With the default `.env`, Windows Explorer shows these folders under
-`data/` in the repository:
+User data survives container rebuilds/recreation. With `.env.example` settings:
 
 - `data/profile/`: preferences, decks, quest progress, and other user data;
   mounted at `/home/forge/.forge` inside the container.
-- `data/cache/`: downloaded image indexes, card pictures, and other cached content;
-  mounted at `/home/forge/.cache/forge`. Card pictures go under `pics/cards/`.
+- The `forge-cache-linux` Docker volume holds downloaded image indexes, card
+  pictures, and other cached content at `/home/forge/.cache/forge`. For the default
+  project name, its full name is `forge-local_forge-cache-linux`. Card pictures go
+  under `pics/cards/`. This volume lives in Docker's Linux filesystem, avoiding
+  repeated small-file reads across the Windows/WSL filesystem boundary.
 
 The first-run image download prompt writes into this cache. Bundled game assets
-remain in the image. These host directories are created automatically by Compose
-and excluded from Git and the image build context. Back up both folders to keep
-your saves and downloads. On Linux, ensure they are writable by container UID 1000.
-Windows-mounted paths can be slower than Linux volumes for many small files.
+remain in the image. Compose creates the profile directory and cache volume.
+Back up both your profile and cache to retain saves and downloads. On Linux,
+host directories must be writable by container UID 1000.
 
-When switching from the earlier named-volume setup, stop the old container and
-copy its data before recreating it. For the default project name, with new/empty
-destination folders, run from PowerShell in the repository root:
+Existing `.env` files without `FORGE_CACHE_SOURCE` continue using `data/cache/`
+(or `${FORGE_DATA_DIR}/cache`). This prevents an upgrade from silently hiding
+existing downloads. To keep both profile and cache directly accessible in Windows
+Explorer, set `FORGE_CACHE_SOURCE=./data/cache`, accepting the slower filesystem
+access from WSL.
+
+### Move an existing Windows cache to Linux storage
+
+Save your work and stop Forge first. Set `FORGE_CACHE_SOURCE=forge-cache-linux`
+in `.env`, but do not start Forge yet. Check `docker volume ls`: the destination
+`<project>_forge-cache-linux` should be new/empty. If it already contains data,
+back it up and resolve the conflict before copying; do not overwrite it blindly.
+Keep your old `data/cache/` folder intact as a rollback copy.
+
+From PowerShell in the repository root, with the default `FORGE_DATA_DIR`:
 
 ```powershell
 wsl.exe --exec docker compose stop
-New-Item -ItemType Directory -Force data/profile, data/cache
-wsl.exe --exec docker cp forge-local-forge-1:/home/forge/.forge/. ./data/profile/
-wsl.exe --exec docker cp forge-local-forge-1:/home/forge/.cache/forge/. ./data/cache/
+wsl.exe --exec docker compose build forge
+wsl.exe --exec docker compose run --rm --no-deps --volume ./data/cache:/cache-source:ro --entrypoint cp forge -a --no-preserve=ownership /cache-source/. /home/forge/.cache/forge/
 ```
 
-Then run `wsl.exe --exec docker compose up`. The old named volumes are not deleted;
-keep them until you have verified the migrated data. Do not copy over existing
-host data without a backup. Migration is unnecessary for a fresh installation.
+Use your actual cache source path in `--volume` if `FORGE_DATA_DIR` differs.
+The copy reads the old cache without modifying it and runs as Forge's UID 1000,
+so the new files remain writable. Check that the copy exits successfully before
+starting `wsl.exe --exec docker compose up`. Decks and preferences stay in the
+existing profile bind mount. Migration is unnecessary for a fresh installation.
+
+To export the Linux cache to a new/empty host backup directory while Forge is
+stopped (using the default container name):
+
+```powershell
+New-Item -ItemType Directory data/cache-backup
+wsl.exe --exec docker cp forge-local-forge-1:/home/forge/.cache/forge/. ./data/cache-backup/
+```
+
+For rollback, stop Forge, export any new downloads, and set `FORGE_CACHE_SOURCE`
+back to `./data/cache` before recreating the container. The original Windows cache
+is not synchronized with the Linux volume after migration.
+
+### Daily commands
 
 ```powershell
 wsl.exe --exec docker compose ps
@@ -105,8 +134,18 @@ the image contains a copy of the checkout, not a live source mount. For debuggin
 and rapid Java iteration, the IntelliJ run configurations remain useful.
 
 `docker compose down` removes the container/network and retains saved data.
-Even `--volumes` does not delete bind-mounted host folders. Deleting `data/`
-manually does delete your saves and downloads.
+**Do not use `docker compose down --volumes` unless you intend to delete the
+Linux cache and its downloaded images.** It does not delete bind-mounted host
+folders, but deleting `data/` manually deletes the profile and any legacy cache.
+
+## Display responsiveness
+
+X DAMAGE is enabled by default. If parts of the screen stop repainting, set
+`VNC_USE_XDAMAGE=false` and recreate the container to restore scan-based detection.
+Keep the browser URL's `resize=scale` setting for fitting the desktop to the
+window; this scales locally, not the virtual display. To reduce rendering and
+transfer work, try `SCREEN_RESOLUTION=1280x720` instead of `1600x900` (36% fewer
+pixels, with less desktop space). No extra Java heap is required for these changes.
 
 ## Implementation
 
